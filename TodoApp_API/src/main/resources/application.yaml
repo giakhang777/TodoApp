@@ -1,0 +1,21 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: ${DBMS_URL:jdbc:mysql://localhost:3306/todoapp}
+    username: ${DBMS_USERNAME:root}
+    password: ${DBMS_PASSWORD:0762751676Kh@}
+    driverClassName: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 10
+      idle-timeout: 30000
+      connection-timeout: 30000
+      max-lifetime: 600000
+      pool-name: HikariCP
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
