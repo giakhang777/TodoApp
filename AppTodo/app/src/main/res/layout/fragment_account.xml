@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/fragment_account"
+    android:padding="16dp">
+
+    <!-- LinearLayout chứa các thành phần -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="501dp"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <!-- Hình đại diện -->
+
+        <!-- Nút chỉnh sửa hình đại diện -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="45dp"
+            android:layout_marginTop="-30dp"
+            android:layout_marginBottom="30dp"
+            android:gravity="center"
+            android:text="My Profile"
+            android:textColor="@color/black"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/profile_image"
+            android:layout_width="192dp"
+            android:layout_height="159dp"
+            android:src="@drawable/hung"
+            app:civ_border_color="@android:color/white"
+            app:civ_border_width="2dp"
+            tools:ignore="MissingClass" />
+
+        <ImageButton
+            android:id="@+id/btn_edit_avatar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/baseline_edit_24"
+            android:contentDescription="Edit Avatar"
+            app:tint="@color/black"
+            tools:ignore="TouchTargetSizeCheck" />
+
+        <!-- TextBox hiển thị tên tài khoản -->
+        <EditText
+            android:id="@+id/et_account_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/edit_text_background"
+            android:hint="Account Name"
+            android:minHeight="48dp"
+            android:padding="10dp" />
+
+        <!-- Nút thay đổi mật khẩu -->
+        <Button
+            android:id="@+id/btn_change_password"
+            android:layout_width="379dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Change Password" />
+
+    </LinearLayout>
+
+    <!-- Nút xóa tài khoản nằm dưới cùng -->
+    <Button
+        android:id="@+id/btn_delete_account"
+        android:layout_width="182dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="150dp"
+        android:text="Delete Account"
+        android:textColor="@android:color/black" />
+
+</FrameLayout>
