@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="activity.HistoryFragment">
+
+    <!-- TextView với hiệu ứng nổi -->
+
+    <!-- RecyclerView -->
+    <TextView
+        android:layout_width="389dp"
+        android:layout_height="95dp"
+        android:layout_margin="16dp"
+        android:background="@drawable/date_item_selected_bg"
+        android:elevation="4dp"
+        android:lineSpacingExtra="4dp"
+        android:padding="16dp"
+        android:text="Activity: All projects\nCompleted tasks - Me"
+        android:textSize="20dp"
+        android:textStyle="bold" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@string/bottom_sheet_behavior"
+        android:padding="8dp"
+        android:scrollbars="vertical" />
+
+</LinearLayout>
