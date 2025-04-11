@@ -1,159 +1,134 @@
 package com.example.apptodo.activity;
 
-import android.graphics.Color;
-import android.os.Bundle;
-import android.os.Handler;
-import android.widget.TextView;
-
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager.widget.ViewPager;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+
+import android.app.DatePickerDialog;
+import android.app.Dialog;
+import android.app.TimePickerDialog;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.os.Bundle;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.widget.ArrayAdapter;
+import android.widget.ImageView;
+import android.widget.Spinner;
 
 import com.example.apptodo.R;
-import com.example.apptodo.adapter.ProgressViewPageAdapter;
-import com.example.apptodo.adapter.TaskGroupAdapter;
-import com.example.apptodo.model.Progress;
-import com.github.mikephil.charting.charts.PieChart;
-import com.github.mikephil.charting.data.PieData;
-import com.github.mikephil.charting.data.PieDataSet;
-import com.github.mikephil.charting.data.PieEntry;
+import com.example.apptodo.databinding.ActivityMainBinding;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.textfield.TextInputEditText;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
-    private RecyclerView rvTaskGroup;
-    private TextView countGroup,countProgress;
-    private TaskGroupAdapter taskGroupAdapter;
-    private List<Progress> listTaskGroup;
-    private ViewPager viewPager;
-    private List<Progress> listInProgress;
-    private Handler handler = new Handler();
-    private Runnable runnable = new Runnable() {
-        @Override
-        public void run() {
-            if (viewPager.getCurrentItem() == listInProgress.size() - 1) {
-                viewPager.setCurrentItem(0);
-            } else {
-                viewPager.setCurrentItem(viewPager.getCurrentItem() + 1);
-            }
-        }
-    };
+
+    ActivityMainBinding binding;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_main);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+
+        // Mặc định mở Fragment Home
+        replaceFragment(new HomeFragment());
+
+        // Xử lý sự kiện khi chọn menu trong BottomNavigationView
+        binding.bottomNavigationView.setBackground(null);
+        binding.bottomNavigationView.setOnItemSelectedListener(item -> {
+            if (item.getItemId() == R.id.home) {
+                replaceFragment(new HomeFragment());
+            } else if (item.getItemId() == R.id.calendar) {
+                replaceFragment(new CalendarFragment());
+            } else if (item.getItemId() == R.id.tasks) {
+                replaceFragment(new TasksFragment());
+            } else if (item.getItemId() == R.id.profile) {
+                replaceFragment(new ProfileFragment());
+            }
+            return true;
         });
-        setPieChart();
-        setViewPager();
-        setTaskGroup();
+        FloatingActionButton fab = findViewById(R.id.fab); // Chính xác
+        // Sự kiện cho FloatingActionButton
+        fab.setOnClickListener(view -> showBottomDialog());
+
+
     }
-    private void setTaskGroup(){
-        rvTaskGroup = findViewById(R.id.rvTaskGroup);
-        countGroup = findViewById(R.id.countGroup);
-        listTaskGroup = new ArrayList<>();
-        listTaskGroup.add(new Progress(R.drawable.ic_account,"quang cao","lam viec 1",50));
-        listTaskGroup.add(new Progress(R.drawable.ic_notification,"coffee","lam viec 2", 75));
-        listTaskGroup.add(new Progress(R.drawable.ic_visibility_off,"pizza","lam viec 3", 80));
-        listTaskGroup.add(new Progress(R.drawable.ic_visibility_on,"ngon","lam viec 4", 92));
-        taskGroupAdapter =new TaskGroupAdapter(this, listTaskGroup);
-        rvTaskGroup.setAdapter(taskGroupAdapter);
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
-        rvTaskGroup.setLayoutManager(linearLayoutManager);
-        countGroup.setText(listTaskGroup.size()+"");
+
+    private void replaceFragment(Fragment fragment) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.replace(R.id.frame_layout, fragment);
+        fragmentTransaction.commit();
     }
-    private void setViewPager(){
-        viewPager = findViewById(R.id.viewpage);
-        countProgress = findViewById(R.id.countProgress);
-        listInProgress = getList();
-        ProgressViewPageAdapter adapter = new ProgressViewPageAdapter(listInProgress);
-        viewPager.setAdapter(adapter);
 
-        // Liên kết ViewPager với CircleIndicator
+    private void showBottomDialog() {
 
-        handler.postDelayed(runnable, 3000);
-        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+        final Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.bottomsheetlayout); // Đảm bảo là layout của bottomsheet
+
+        // Tìm và thiết lập nút đóng (cancelButton) từ bottomsheetlayout
+        ImageView cancelButton = dialog.findViewById(R.id.closeButton);
+        cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
-            }
-
-            @Override
-            public void onPageSelected(int position) {
-                handler.removeCallbacks(runnable);
-                handler.postDelayed(runnable, 3000);
-            }
-
-            @Override
-            public void onPageScrollStateChanged(int state) {
-
+            public void onClick(View view) {
+                dialog.dismiss();
             }
         });
-        countProgress.setText(listInProgress.size()+"");
-    }
-    private void setPieChart(){
-        PieChart pieChart = findViewById(R.id.chart);
 
-        // Dữ liệu phần trăm
-        ArrayList<PieEntry> entries = new ArrayList<>();
-        entries.add(new PieEntry(75, ""));
-        entries.add(new PieEntry(25, ""));
+        // Tìm và thiết lập các Spinner từ bottomsheetlayout
+        Spinner prioritySpinner = dialog.findViewById(R.id.prioritySpinner);
+        ArrayAdapter<CharSequence> priorityAdapter = ArrayAdapter.createFromResource(this, R.array.priority_array, android.R.layout.simple_spinner_item);
+        priorityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        prioritySpinner.setAdapter(priorityAdapter);
 
-        PieDataSet dataSet = new PieDataSet(entries, "Tiến độ công việc");
-        dataSet.setColors(Color.WHITE, Color.TRANSPARENT);
-        dataSet.setValueTextSize(16f);
+        Spinner projectNameSpinner = dialog.findViewById(R.id.projectNameSpinner);
+        ArrayAdapter<CharSequence> projectAdapter = ArrayAdapter.createFromResource(this, R.array.project_array, android.R.layout.simple_spinner_item);
+        projectAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        projectNameSpinner.setAdapter(projectAdapter);
 
-        // Ẩn phần trăm trên biểu đồ
-        dataSet.setDrawValues(false);
+        Spinner labelsSpinner = dialog.findViewById(R.id.labelsSpinner);
+        ArrayAdapter<CharSequence> labelsAdapter = ArrayAdapter.createFromResource(this, R.array.labels_array, android.R.layout.simple_spinner_item);
+        labelsAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        labelsSpinner.setAdapter(labelsAdapter);
 
-        PieData data = new PieData(dataSet);
-        pieChart.setData(data);
+        // Tìm và thiết lập các TextInputEditText từ bottomsheetlayout
+        TextInputEditText dueDateEditText = dialog.findViewById(R.id.dueDate);
+        dueDateEditText.setOnClickListener(v -> {
+            Calendar calendar = Calendar.getInstance();
+            int year = calendar.get(Calendar.YEAR);
+            int month = calendar.get(Calendar.MONTH);
+            int day = calendar.get(Calendar.DAY_OF_MONTH);
 
-        // Cài đặt Donut Chart (Lõm ở giữa)
-        pieChart.setDrawHoleEnabled(true);
-        pieChart.setHoleRadius(75f);  // Kích thước lõm
-        pieChart.setTransparentCircleRadius(55f);
-        pieChart.setHoleColor(Color.TRANSPARENT);
-        pieChart.setCenterText("75%"); // Hiển thị phần trăm ở giữa
-        pieChart.setCenterTextSize(16f);
-        pieChart.setCenterTextColor(Color.WHITE);
+            DatePickerDialog datePickerDialog = new DatePickerDialog(this, (view, selectedYear, selectedMonth, selectedDay) -> {
+                dueDateEditText.setText(selectedDay + "/" + (selectedMonth + 1) + "/" + selectedYear);
+            }, year, month, day);
+            datePickerDialog.show();
+        });
 
-        // Ẩn mô tả và legend (chú thích)
-        pieChart.getDescription().setEnabled(false);
-        pieChart.getLegend().setEnabled(false);
+        TextInputEditText reminderTimeEditText = dialog.findViewById(R.id.reminderTime);
+        reminderTimeEditText.setOnClickListener(v -> {
+            Calendar calendar = Calendar.getInstance();
+            int hour = calendar.get(Calendar.HOUR_OF_DAY);
+            int minute = calendar.get(Calendar.MINUTE);
 
-        // Cập nhật biểu đồ
-        pieChart.invalidate();
-    }
-    private List<Progress> getList() {
-        List<Progress> list = new ArrayList<>();
-        list.add(new Progress(R.drawable.ic_account,"quang cao","lam viec 1",50));
-        list.add(new Progress(R.drawable.ic_notification,"coffee","lam viec 2", 75));
-        list.add(new Progress(R.drawable.ic_visibility_off,"pizza","lam viec 3", 80));
-        list.add(new Progress(R.drawable.ic_visibility_on,"ngon","lam viec 4", 92));
+            TimePickerDialog timePickerDialog = new TimePickerDialog(this, (view, selectedHour, selectedMinute) -> {
+                reminderTimeEditText.setText(selectedHour + ":" + selectedMinute);
+            }, hour, minute, true);
+            timePickerDialog.show();
+        });
 
-        return list;
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        handler.postDelayed(runnable, 3000);
+        dialog.show();
+        dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        dialog.getWindow().getAttributes().windowAnimations = R.style.DialogAnimation;
+        dialog.getWindow().setGravity(Gravity.BOTTOM);
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        handler.removeCallbacks(runnable);
-    }
 }
