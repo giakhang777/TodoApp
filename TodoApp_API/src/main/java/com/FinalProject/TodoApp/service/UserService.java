@@ -1,5 +1,4 @@
 package com.FinalProject.TodoApp.service;
-
 import com.FinalProject.TodoApp.entity.User;
 import com.FinalProject.TodoApp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,3 +34,4 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 }
+
