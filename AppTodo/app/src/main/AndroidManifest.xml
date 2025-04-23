@@ -22,7 +22,7 @@
             android:name=".activity.VerifyOtpCodeActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.ResetPasswordActity"
+            android:name=".activity.ResetPasswordActivity"
             android:exported="false" />
         <activity
             android:name=".activity.ForgotPasswordActivity"
@@ -31,11 +31,8 @@
             android:name=".activity.LoginActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.Main"
-            android:exported="false" />
-        <activity
             android:name=".activity.MainActivity"
-            android:exported="false" />
+            android:exported="true" />
         <activity
             android:name=".activity.StartActivity"
             android:exported="true">
