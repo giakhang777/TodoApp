@@ -1,4 +1,4 @@
 package com.FinalProject.TodoApp.service;
 
-public interface UserService {
+public interface IUserService {
 }

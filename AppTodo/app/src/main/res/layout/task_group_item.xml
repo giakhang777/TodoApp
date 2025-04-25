@@ -16,14 +16,6 @@
         android:orientation="horizontal"
         android:paddingHorizontal="10dp">
 
-        <ImageView
-            android:id="@+id/imgLogo"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:layout_marginRight="5dp"
-            android:layout_weight="1"
-            android:src="@drawable/lock" />
-
 
         <LinearLayout
             android:layout_width="wrap_content"

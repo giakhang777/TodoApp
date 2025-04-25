@@ -1,4 +1,6 @@
 package com.FinalProject.TodoApp.service.impl;
 
-public class UserService {
+import com.FinalProject.TodoApp.service.IUserService;
+
+public class UserService implements IUserService {
 }

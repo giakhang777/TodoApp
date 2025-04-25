@@ -5,7 +5,7 @@ spring:
   datasource:
     url: ${DBMS_URL:jdbc:mysql://localhost:3306/todoapp}
     username: ${DBMS_USERNAME:root}
-    password: ${DBMS_PASSWORD:0762751676Kh@}
+    password: ${DBMS_PASSWORD:751676Kh@}
     driverClassName: com.mysql.cj.jdbc.Driver
     hikari:
       minimum-idle: 5
