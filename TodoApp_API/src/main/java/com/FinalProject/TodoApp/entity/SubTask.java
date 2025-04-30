@@ -3,18 +3,17 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "task")
+@Table(name = "sub_task")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class SubTask {
+public class SubTask extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     private String title;
-
     private Boolean completed;
 
     @ManyToOne

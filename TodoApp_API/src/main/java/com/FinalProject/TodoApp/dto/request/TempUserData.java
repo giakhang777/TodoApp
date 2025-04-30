@@ -1,4 +1,4 @@
-package com.FinalProject.TodoApp.dto;
+package com.FinalProject.TodoApp.dto.request;
 
 import com.FinalProject.TodoApp.entity.User;
 import lombok.AllArgsConstructor;

@@ -1,9 +1,9 @@
 package com.FinalProject.TodoApp.controller;
 
 import com.FinalProject.TodoApp.Email;
-import com.FinalProject.TodoApp.dto.*;
+import com.FinalProject.TodoApp.dto.request.*;
 import com.FinalProject.TodoApp.entity.User;
-import com.FinalProject.TodoApp.service.UserService;
+import com.FinalProject.TodoApp.service.IUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final UserService userService;
+    private final IUserService userService;
     private final Email email;
     private final ModelMapper modelMapper;
     private final PasswordEncoder passwordEncoder;
