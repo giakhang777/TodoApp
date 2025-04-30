@@ -1,9 +1,9 @@
 package com.FinalProject.TodoApp.controller;
 
-import com.FinalProject.TodoApp.dto.UserLoginRequestDTO;
-import com.FinalProject.TodoApp.dto.UserResponseDTO;
+import com.FinalProject.TodoApp.dto.request.UserLoginRequestDTO;
+import com.FinalProject.TodoApp.dto.response.UserResponseDTO;
 import com.FinalProject.TodoApp.entity.User;
-import com.FinalProject.TodoApp.service.UserService;
+import com.FinalProject.TodoApp.service.IUserService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +23,7 @@ public class UserController {
     private ModelMapper modelMapper;
 
     @Autowired
-    private UserService userService;
+    private IUserService userService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody UserLoginRequestDTO requestDTO) {
