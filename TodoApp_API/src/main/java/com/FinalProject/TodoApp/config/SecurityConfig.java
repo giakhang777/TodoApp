@@ -36,7 +36,8 @@ public class SecurityConfig {
                                 "/api/task/**",
                                 "/api/task/*/status",
                                 "/api/subtask/**",
-                                "/api/subtask/*/status"
+                                "/api/subtask/*/status",
+                                "/api/label/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

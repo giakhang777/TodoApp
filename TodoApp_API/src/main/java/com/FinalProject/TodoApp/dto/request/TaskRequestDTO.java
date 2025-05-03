@@ -20,11 +20,13 @@ public class TaskRequestDTO {
     private String title;
     private String priority;
     private LocalDate dueDate;
-    private String label;
+
     private String description;
     private Boolean reminder;
     @JsonProperty("reminder_time")
     private LocalDateTime reminderTime;
     @JsonProperty("project_id")
     private Integer projectId;
+    @JsonProperty("label_id")
+    private Integer labelId;
 }

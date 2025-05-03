@@ -40,6 +40,12 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
 
+        // Kiểm tra nếu username đã tồn tại trong database
+        if (userService.findByUsername(userReq.getUsername()).isPresent()) {
+            response.put("message", "Username đã tồn tại trong hệ thống");
+            return ResponseEntity.badRequest().body(response);
+        }
+
         // Kiểm tra nếu email đã tồn tại trong database
         if (userService.findByEmail(userReq.getEmail()).isPresent()) {
             response.put("message", "Email đã tồn tại trong hệ thống");

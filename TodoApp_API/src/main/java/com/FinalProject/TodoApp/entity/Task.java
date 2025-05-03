@@ -22,7 +22,7 @@ public class Task extends BaseEntity {
     private String priority;
     @Column(name = "due_date")
     private LocalDate dueDate;
-    private String label;
+
     private String description;
     private Boolean reminder;
     private Boolean completed;
@@ -32,6 +32,10 @@ public class Task extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "project_id")
     private Project project;
+
+    @ManyToOne
+    @JoinColumn(name = "label_id")
+    private Label label;
 
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SubTask> subTasks;
