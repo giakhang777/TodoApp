@@ -71,64 +71,44 @@ public class MainActivity extends AppCompatActivity {
 
         final Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog.setContentView(R.layout.bottomsheetlayout); // Đảm bảo là layout của bottomsheet
+        dialog.setContentView(R.layout.bottomsheetlayout);
 
-        // Tìm và thiết lập nút đóng (cancelButton) từ bottomsheetlayout
-        ImageView cancelButton = dialog.findViewById(R.id.closeButton);
-        cancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                dialog.dismiss();
-            }
-        });
+        // Lấy View root từ dialog
+        View view = dialog.findViewById(android.R.id.content);
 
-        // Tìm và thiết lập các Spinner từ bottomsheetlayout
-        Spinner prioritySpinner = dialog.findViewById(R.id.prioritySpinner);
-        ArrayAdapter<CharSequence> priorityAdapter = ArrayAdapter.createFromResource(this, R.array.priority_array, android.R.layout.simple_spinner_item);
-        priorityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        // Nút đóng
+        ImageView cancelButton = view.findViewById(R.id.closeButton);
+        cancelButton.setOnClickListener(v -> dialog.dismiss());
+
+        // Tìm Spinner đúng từ layout của dialog
+        Spinner prioritySpinner = view.findViewById(R.id.prioritySpinner);
+        Spinner projectSpinner = view.findViewById(R.id.projectSpinner);
+        Spinner labelSpinner = view.findViewById(R.id.labelSpinner);
+
+        // Dữ liệu mẫu
+        String[] priorities = {"Low", "Medium", "High"};
+        String[] projects = {"Personal", "Work", "School"};
+        String[] labels = {"Urgent", "Important", "Optional"};
+
+        // Adapter setup
+        ArrayAdapter<String> priorityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, priorities);
         prioritySpinner.setAdapter(priorityAdapter);
 
-        Spinner projectNameSpinner = dialog.findViewById(R.id.projectNameSpinner);
-        ArrayAdapter<CharSequence> projectAdapter = ArrayAdapter.createFromResource(this, R.array.project_array, android.R.layout.simple_spinner_item);
-        projectAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        projectNameSpinner.setAdapter(projectAdapter);
+        ArrayAdapter<String> projectAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, projects);
+        projectSpinner.setAdapter(projectAdapter);
 
-        Spinner labelsSpinner = dialog.findViewById(R.id.labelsSpinner);
-        ArrayAdapter<CharSequence> labelsAdapter = ArrayAdapter.createFromResource(this, R.array.labels_array, android.R.layout.simple_spinner_item);
-        labelsAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        labelsSpinner.setAdapter(labelsAdapter);
+        ArrayAdapter<String> labelAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, labels);
+        labelSpinner.setAdapter(labelAdapter);
 
-        // Tìm và thiết lập các TextInputEditText từ bottomsheetlayout
-        TextInputEditText dueDateEditText = dialog.findViewById(R.id.dueDate);
-        dueDateEditText.setOnClickListener(v -> {
-            Calendar calendar = Calendar.getInstance();
-            int year = calendar.get(Calendar.YEAR);
-            int month = calendar.get(Calendar.MONTH);
-            int day = calendar.get(Calendar.DAY_OF_MONTH);
-
-            DatePickerDialog datePickerDialog = new DatePickerDialog(this, (view, selectedYear, selectedMonth, selectedDay) -> {
-                dueDateEditText.setText(selectedDay + "/" + (selectedMonth + 1) + "/" + selectedYear);
-            }, year, month, day);
-            datePickerDialog.show();
-        });
-
-        TextInputEditText reminderTimeEditText = dialog.findViewById(R.id.reminderTime);
-        reminderTimeEditText.setOnClickListener(v -> {
-            Calendar calendar = Calendar.getInstance();
-            int hour = calendar.get(Calendar.HOUR_OF_DAY);
-            int minute = calendar.get(Calendar.MINUTE);
-
-            TimePickerDialog timePickerDialog = new TimePickerDialog(this, (view, selectedHour, selectedMinute) -> {
-                reminderTimeEditText.setText(selectedHour + ":" + selectedMinute);
-            }, hour, minute, true);
-            timePickerDialog.show();
-        });
-
+        // Hiển thị dialog
         dialog.show();
-        dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        dialog.getWindow().getAttributes().windowAnimations = R.style.DialogAnimation;
-        dialog.getWindow().setGravity(Gravity.BOTTOM);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            dialog.getWindow().getAttributes().windowAnimations = R.style.DialogAnimation;
+            dialog.getWindow().setGravity(Gravity.BOTTOM);
+        }
     }
+
 
 }

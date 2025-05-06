@@ -1,164 +1,193 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/edit_text_background"
     android:padding="16dp"
-    tools:ignore="ExtraText">
+    android:background="@android:color/white">
 
-    <!-- Close Button (X) in Top Right Corner -->
-
-    <!-- Task Name -->
-    <ImageButton
-        android:id="@+id/closeButton"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_gravity="end"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="16dp"
-        android:background="?android:attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Close"
-        android:src="@drawable/baseline_close_24"
-        tools:ignore="TouchTargetSizeCheck" />
-
-    <com.google.android.material.textfield.TextInputLayout
+    <LinearLayout
+        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        app:hintEnabled="true">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/taskName"
+        android:layout_height="wrap_content">
+
+        <!-- Close Button -->
+        <ImageButton
+            android:id="@+id/closeButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="end"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Close"
+            android:src="@drawable/baseline_close_24"
+            tools:ignore="TouchTargetSizeCheck" />
+
+        <!-- Task Title -->
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Task Name"
-            android:textColor="@android:color/black"
-            android:textSize="16sp"
+            android:layout_marginBottom="12dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/taskTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/edit_text_background"
+                android:hint="Task Title"
+                android:padding="12dp"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"
+                tools:ignore="TouchTargetSizeCheck" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Description -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/taskDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/edit_text_background"
+                android:hint="Task Description"
+                android:inputType="textMultiLine"
+                android:padding="12dp"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"
+                tools:ignore="TouchTargetSizeCheck" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Priority -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Priority"
             android:textStyle="bold"
-            android:inputType="text" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:textSize="16sp"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="4dp" />
 
-    <!-- Priority (ComboBox - Spinner) -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Priority"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp" />
+        <Spinner
+            android:id="@+id/prioritySpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/edit_text_background"
+            android:minHeight="48dp"
+            android:padding="8dp" />
 
-    <Spinner
-        android:id="@+id/prioritySpinner"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="48dp" />
+        <!-- Scheduled Date -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Scheduled Date"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="4dp" />
 
-    <!-- Due Date (DatePicker) -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Due Date"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp" />
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp">
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/dueDate"
+            android:id="@+id/scheduledDate"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Select Date"
             android:focusable="false"
+            android:background="@drawable/edit_text_background"
+            android:padding="12dp"
             android:textColor="@android:color/black"
-            android:textSize="16sp" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginBottom="12dp" />
 
-    <!-- Project Name (ComboBox - Spinner) -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Project Name"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp" />
-
-    <Spinner
-        android:id="@+id/projectNameSpinner"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="48dp" />
-
-    <!-- Labels (ComboBox - Spinner) -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Labels"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp" />
-
-    <Spinner
-        android:id="@+id/labelsSpinner"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="48dp" />
-
-    <!-- Description -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/taskDescription"
+        <!-- Due Time -->
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Description"
-            android:textColor="@android:color/black"
-            android:textSize="16sp"
+            android:text="Due Time"
             android:textStyle="bold"
-            android:inputType="textMultiLine" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:textSize="16sp"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="4dp" />
 
-    <!-- Reminder (Switch) -->
-    <Switch
-        android:id="@+id/reminderSwitch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:minHeight="48dp"
-        android:text="Reminder"
-        android:textColor="@android:color/black" />
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/dueTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Select Due Time"
+            android:focusable="false"
+            android:background="@drawable/edit_text_background"
+            android:padding="12dp"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="12dp" />
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp">
+        <!-- Reminder Time -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Reminder Time"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="4dp" />
+
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/reminderTime"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Select Reminder Time"
             android:focusable="false"
+            android:background="@drawable/edit_text_background"
+            android:padding="12dp"
             android:textColor="@android:color/black"
-            android:textSize="16sp" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginBottom="12dp" />
 
-    <!-- Save Button -->
+        <!-- Project -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Project"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="4dp" />
 
-    <Button
-        android:id="@+id/saveButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Save"
-        android:layout_marginLeft="140dp"
-        tools:ignore="TouchTargetSizeCheck" />
-</LinearLayout>
+        <Spinner
+            android:id="@+id/projectSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/edit_text_background"
+            android:minHeight="48dp"
+            android:padding="8dp" />
+
+        <!-- Label -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Label"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="4dp" />
+
+        <Spinner
+            android:id="@+id/labelSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:background="@drawable/edit_text_background"
+            android:minHeight="48dp"
+            android:padding="8dp" />
+
+        <!-- Save Button -->
+        <Button
+            android:id="@+id/saveButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save"
+            android:textColor="@android:color/white"
+            android:background="@drawable/edit_text_background"
+            android:padding="14dp" />
+    </LinearLayout>
+</ScrollView>
