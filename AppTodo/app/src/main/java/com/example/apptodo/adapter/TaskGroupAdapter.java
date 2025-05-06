@@ -44,7 +44,7 @@ public class TaskGroupAdapter extends RecyclerView.Adapter<TaskGroupAdapter.Task
     @Override
     public void onBindViewHolder(TaskGroupAdapter.TaskGroupViewHolder holder, int position) {
         Progress progress = list.get(position);
-        holder.imgLogo.setImageResource(progress.getImageResId());
+        //holder.imgLogo.setImageResource(progress.getImageResId());
         holder.desc1.setText(progress.getDesc1());
 
         holder.desc2.setText(progress.getDesc2());
@@ -85,14 +85,14 @@ public class TaskGroupAdapter extends RecyclerView.Adapter<TaskGroupAdapter.Task
         return list.size();
     }
     class TaskGroupViewHolder extends RecyclerView.ViewHolder {
-        private ImageView imgLogo;
+        //private ImageView imgLogo;
         private TextView desc1;
         private TextView desc2;
         private PieChart pieChart;
 
         public TaskGroupViewHolder(View itemView) {
             super(itemView);
-            imgLogo =(ImageView) itemView.findViewById(R.id.imgLogo);
+            //imgLogo =(ImageView) itemView.findViewById(R.id.imgLogo);
             desc1 =(TextView) itemView.findViewById(R.id.nameCategory);
             desc2 =(TextView) itemView.findViewById(R.id.countTask);
             pieChart =(PieChart) itemView.findViewById(R.id.chart);

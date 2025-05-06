@@ -15,28 +15,39 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 @EnableWebSecurity
 public class SecurityConfig {
 
-    // Bean cho PasswordEncoder (BCrypt)
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // Cấu hình bảo mật các endpoint
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())  // Tắt CSRF vì đây là API, không cần thiết
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authz -> authz
-                        // Cho phép truy cập không cần xác thực với các API đăng ký và xác minh OTP
-                        .requestMatchers("/api/auth/register", "/api/auth/verify-code","/api/user/login","/api/auth/forgot-password","/api/auth/forgot-password/verify-code","/api/auth/reset-password").permitAll()
-                        .anyRequest().authenticated()  // Các yêu cầu API khác đều yêu cầu xác thực
+                        .requestMatchers(
+                                "/api/auth/register",
+                                "/api/auth/verify-code",
+                                "/api/user/login",
+                                "/api/auth/forgot-password",
+                                "/api/auth/forgot-password/verify-code",
+                                "/api/auth/reset-password",
+                                "/api/project/**",
+                                "/api/task/**",
+                                "/api/task/*/status",
+                                "/api/subtask/**",
+                                "/api/subtask/*/status",
+                                "/api/label/**"
+                        ).permitAll()
+                        .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, authException) ->
-                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))  // Trả về lỗi 401 khi không xác thực
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")
+                        )
                 )
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)  // Không sử dụng session cho API
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 );
 
         return http.build();

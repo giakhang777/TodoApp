@@ -1,34 +1,36 @@
 package com.FinalProject.TodoApp.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import java.util.HashSet;
-import java.util.Set;
+import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
-@Table(name = "projects")
-public class Project {
-
+@Table(name = "project")
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class Project extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
+    @Column(nullable = false)
     private String name;
+
+    private String color;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
-    private User user;  // Một Project thuộc về một User
+    private User user;
 
-    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL)
-    private Set<Task> tasks = new HashSet<>();  // Một Project có thể có nhiều Task
+    @ManyToOne
+    @JoinColumn(name = "label_id")
+    private Label label;
 
-    // Quan hệ Many-to-Many với Label (Mỗi Project có thể có nhiều Label)
-    @ManyToMany
-    @JoinTable(
-            name = "label_project",  // Tên bảng trung gian
-            joinColumns = @JoinColumn(name = "project_id"),  // Khóa ngoại chỉ đến Project
-            inverseJoinColumns = @JoinColumn(name = "label_id")  // Khóa ngoại chỉ đến Label
-    )
-    private Set<Label> labels = new HashSet<>();  // Một Project có thể có nhiều Label
-
-    // Getter & Setter
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Task> tasks;
 }

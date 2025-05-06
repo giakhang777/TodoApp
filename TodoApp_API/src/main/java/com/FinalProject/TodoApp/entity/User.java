@@ -4,11 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.util.List;
-
-// Import đúng lớp Task của bạn, không phải của Spring
-import com.FinalProject.TodoApp.entity.Task;
-
 @Entity(name = "user")
 @Data
 @NoArgsConstructor
@@ -16,13 +11,11 @@ import com.FinalProject.TodoApp.entity.Task;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class User {
-
     private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id")
-    private Integer userId;
+    private Integer id;
 
     @Column(name = "user_name", unique = true)
     String username;
@@ -41,16 +34,4 @@ public class User {
 
     @Column(name = "avatar")
     String avatar; // <- thuộc tính avatar mới
-
-    // ---- Quan hệ với Task ----
-    @OneToMany(mappedBy = "user")
-    private List<Task> tasks;
-
-    // ---- Quan hệ với Project ----
-    @OneToMany(mappedBy = "user")
-    private List<Project> projects;
-
-    // ---- Quan hệ với Label (nếu người dùng có thể tạo label) ----
-    @OneToMany(mappedBy = "user")
-    private List<Label> labels;
 }
