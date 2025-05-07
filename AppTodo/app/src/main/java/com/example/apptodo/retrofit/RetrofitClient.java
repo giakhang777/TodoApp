@@ -1,5 +1,6 @@
 package com.example.apptodo.retrofit;
 
+import com.example.apptodo.api.TaskService;
 import com.example.apptodo.api.UserService;
 import okhttp3.OkHttpClient;
 import retrofit2.Retrofit;
@@ -29,5 +30,8 @@ public class RetrofitClient {
 
     public static UserService getApiUserService() {
         return getRetrofit().create(UserService.class);
+    }
+    public static TaskService getTaskService() {
+        return getRetrofit().create(TaskService.class);
     }
 }

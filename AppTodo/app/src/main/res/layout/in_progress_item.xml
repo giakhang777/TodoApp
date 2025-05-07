@@ -22,7 +22,7 @@
             android:orientation="horizontal">
 
             <TextView
-                android:id="@+id/nameCategory"
+                android:id="@+id/nameProject"
                 android:layout_width="0dp"
                 android:textSize="16dp"
                 android:layout_height="wrap_content"
@@ -30,11 +30,15 @@
                 android:text="Office Project"
                 android:textColor="#535557" />
 
-            <ImageView
-                android:id="@+id/imgLogo"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_visibility_off" />
+            <TextView
+                android:id="@+id/nameLabel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Read"
+                android:textAlignment="viewEnd"
+                android:textColor="#535557"
+                android:textSize="16dp" />
         </LinearLayout>
 
         <TextView

@@ -6,9 +6,11 @@ import com.FinalProject.TodoApp.service.ITaskService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -46,6 +48,15 @@ public class TaskController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<?> getTasksByUser(@Valid @PathVariable Integer userId) {
+        try {
+            List<TaskResponseDTO> tasks = taskService.getTasksByUserId(userId);
+            return ResponseEntity.ok(tasks);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateTask(@Valid @PathVariable Integer id, @Valid @RequestBody TaskRequestDTO dto) {
@@ -76,5 +87,13 @@ public class TaskController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-
+    @GetMapping("/date/{date}")
+    public ResponseEntity<?> getTasksByDate(@Valid @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        try {
+            List<TaskResponseDTO> tasks = taskService.getAllByDate(date);
+            return ResponseEntity.ok(tasks);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

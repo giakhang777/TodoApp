@@ -16,7 +16,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.apptodo.R;
-import com.example.apptodo.model.OTPRequest;
+import com.example.apptodo.model.request.OTPRequest;
 import com.example.apptodo.retrofit.RetrofitClient;
 
 import java.util.HashMap;

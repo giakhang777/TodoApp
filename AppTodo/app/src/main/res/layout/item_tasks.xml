@@ -6,71 +6,88 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    app:cardCornerRadius="30dp"
     app:cardElevation="4dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:orientation="horizontal"
         android:padding="16dp">
 
+        <RadioButton
+            android:id="@+id/statusButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0"
+            android:text="" />
 
-        <ImageView
-            android:id="@+id/imgProject"
-            android:layout_width="39dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="324dp"
-            android:layout_marginTop="4dp"
-            android:scaleType="centerCrop"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:orientation="vertical">
 
+            <TextView
+                android:id="@+id/nameProject"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:text="Project" />
 
-        <TextView
-            android:id="@+id/tvNameProject"
-            android:layout_width="296dp"
-            android:layout_height="34dp"
-            android:layout_marginTop="4dp"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@id/tvStatus"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            <TextView
+                android:id="@+id/nameTask"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Task" />
 
-        <TextView
-            android:id="@+id/tvTask"
-            android:layout_width="286dp"
-            android:layout_height="41dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="20dp"
-            android:textColor="#999"
-            android:textSize="12sp"
-            app:layout_constraintStart_toStartOf="@id/tvNameProject"
-            app:layout_constraintTop_toBottomOf="@id/tvNameProject" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/tvTime"
-            android:layout_width="95dp"
-            android:layout_height="39dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="28dp"
-            android:textColor="#999"
-            android:textSize="12sp"
-            app:layout_constraintStart_toStartOf="@id/tvTask"
-            app:layout_constraintTop_toBottomOf="@id/tvTask" />
+                <TextView
+                    android:id="@+id/dueDate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Day" />
+                <TextView
+                    android:id="@+id/dueTime"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Time" />
+            </LinearLayout>
+        </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvStatus"
-            android:layout_width="56dp"
-            android:layout_height="24dp"
-            android:layout_marginEnd="8dp"
-            android:text="DONE"
-            android:textColor="@android:color/holo_green_dark"
-            android:textSize="12sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/imgProject"
-            app:layout_constraintVertical_bias="0.85" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="0"
+            android:orientation="vertical">
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            <TextView
+                android:id="@+id/nameLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_weight="1"
+                android:gravity="end"
+                android:text="TextView" />
+
+            <ImageButton
+                android:id="@+id/imageButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@color/white"
+                android:layout_gravity="end"
+                app:srcCompat="@drawable/ic_expand_more" />
+        </LinearLayout>
+
+    </LinearLayout>
 </androidx.cardview.widget.CardView>

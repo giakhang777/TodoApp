@@ -20,8 +20,8 @@ import androidx.viewpager.widget.ViewPager;
 
 import com.bumptech.glide.Glide;
 import com.example.apptodo.R;
-import com.example.apptodo.adapter.ProgressViewPageAdapter;
-import com.example.apptodo.adapter.TaskGroupAdapter;
+import com.example.apptodo.adapter.InProgressViewPageAdapter;
+import com.example.apptodo.adapter.ProjectAdapter;
 import com.example.apptodo.model.Progress;
 import com.example.apptodo.model.UserResponse;
 import com.example.apptodo.viewmodel.SharedUserViewModel;
@@ -37,7 +37,7 @@ public class HomeFragment extends Fragment {
 
     private RecyclerView rvTaskGroup;
     private TextView countGroup, countProgress, profileNameTextView; // Khai báo TextView
-    private TaskGroupAdapter taskGroupAdapter;
+    private ProjectAdapter taskGroupAdapter;
     private List<Progress> listTaskGroup;
     private ViewPager viewPager;
     private List<Progress> listInProgress;
@@ -105,7 +105,7 @@ public class HomeFragment extends Fragment {
         listTaskGroup.add(new Progress(R.drawable.ic_notification,"coffee","lam viec 2", 75));
         listTaskGroup.add(new Progress(R.drawable.ic_visibility_off,"pizza","lam viec 3", 80));
         listTaskGroup.add(new Progress(R.drawable.ic_visibility_on,"ngon","lam viec 4", 92));
-        taskGroupAdapter = new TaskGroupAdapter(getContext(), listTaskGroup);
+        taskGroupAdapter = new ProjectAdapter(getContext(), listTaskGroup);
         rvTaskGroup.setAdapter(taskGroupAdapter);
         rvTaskGroup.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
         countGroup.setText(String.valueOf(listTaskGroup.size()));
@@ -115,7 +115,7 @@ public class HomeFragment extends Fragment {
         viewPager = view.findViewById(R.id.viewpage);
         countProgress = view.findViewById(R.id.countProgress);
         listInProgress = getList();
-        ProgressViewPageAdapter adapter = new ProgressViewPageAdapter(listInProgress);
+        InProgressViewPageAdapter adapter = new InProgressViewPageAdapter(listInProgress);
         viewPager.setAdapter(adapter);
 
         handler.postDelayed(runnable, 3000);

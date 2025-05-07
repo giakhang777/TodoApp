@@ -5,16 +5,13 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.apptodo.R;
 import com.example.apptodo.model.Progress;
-import com.example.apptodo.model.TaskGroup;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
@@ -23,12 +20,12 @@ import com.github.mikephil.charting.data.PieEntry;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TaskGroupAdapter extends RecyclerView.Adapter<TaskGroupAdapter.TaskGroupViewHolder>{
+public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.TaskGroupViewHolder>{
     private List<Progress> list;
     private Context context;
     private LayoutInflater layout;
 
-    public TaskGroupAdapter(Context context,List<Progress> list) {
+    public ProjectAdapter(Context context, List<Progress> list) {
         this.list = list;
         this.context = context;
         this.layout = LayoutInflater.from(context);
@@ -36,13 +33,13 @@ public class TaskGroupAdapter extends RecyclerView.Adapter<TaskGroupAdapter.Task
 
     @NonNull
     @Override
-    public TaskGroupAdapter.TaskGroupViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View itemView = layout.inflate(R.layout.task_group_item, parent, false);
+    public ProjectAdapter.TaskGroupViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View itemView = layout.inflate(R.layout.project_item, parent, false);
         return new TaskGroupViewHolder(itemView);
     }
 
     @Override
-    public void onBindViewHolder(TaskGroupAdapter.TaskGroupViewHolder holder, int position) {
+    public void onBindViewHolder(ProjectAdapter.TaskGroupViewHolder holder, int position) {
         Progress progress = list.get(position);
         //holder.imgLogo.setImageResource(progress.getImageResId());
         holder.desc1.setText(progress.getDesc1());
@@ -93,7 +90,7 @@ public class TaskGroupAdapter extends RecyclerView.Adapter<TaskGroupAdapter.Task
         public TaskGroupViewHolder(View itemView) {
             super(itemView);
             //imgLogo =(ImageView) itemView.findViewById(R.id.imgLogo);
-            desc1 =(TextView) itemView.findViewById(R.id.nameCategory);
+            desc1 =(TextView) itemView.findViewById(R.id.nameProject);
             desc2 =(TextView) itemView.findViewById(R.id.countTask);
             pieChart =(PieChart) itemView.findViewById(R.id.chart);
         }
