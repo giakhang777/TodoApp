@@ -3,7 +3,6 @@ package com.example.apptodo.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -15,10 +14,10 @@ import com.example.apptodo.model.Progress;
 
 import java.util.List;
 
-public class ProgressViewPageAdapter extends PagerAdapter {
+public class InProgressViewPageAdapter extends PagerAdapter {
     private List<Progress> imageList;
 
-    public ProgressViewPageAdapter(List<Progress> imageList) {
+    public InProgressViewPageAdapter(List<Progress> imageList) {
         this.imageList = imageList;
     }
 
@@ -36,13 +35,13 @@ public class ProgressViewPageAdapter extends PagerAdapter {
     @Override
     public Object instantiateItem(@NonNull ViewGroup container, int position) {
         View view = LayoutInflater.from(container.getContext()).inflate(R.layout.in_progress_item, container, false);
-        ImageView imageView = view.findViewById(R.id.imgLogo);
-        TextView desc1 = view.findViewById(R.id.nameCategory);
+        TextView label = view.findViewById(R.id.nameLabel);
+        TextView desc1 = view.findViewById(R.id.nameProject);
         TextView desc2 = view.findViewById(R.id.nameTask);
         ProgressBar progressBar = view.findViewById(R.id.progressBar);
         Progress imageModel = imageList.get(position);
 
-        imageView.setImageResource(imageModel.getImageResId());
+        label.setText(imageModel.getImageResId());
         desc1.setText(imageModel.getDesc1().trim());
         desc2.setText(imageModel.getDesc2().trim());
         progressBar.setProgress(imageModel.getProgress());

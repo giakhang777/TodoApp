@@ -1,5 +1,6 @@
 package com.FinalProject.TodoApp.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -30,14 +31,15 @@ public class Task extends BaseEntity {
     private LocalDateTime reminderTime;
 
     @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @ManyToOne
     @JoinColumn(name = "project_id")
     private Project project;
 
     @ManyToOne
     @JoinColumn(name = "label_id")
     private Label label;
-
-    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<SubTask> subTasks;
 
 }

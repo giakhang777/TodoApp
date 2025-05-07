@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface ILabelService {
     LabelResponseDTO createLabel(LabelRequestDTO dto);
-    List<LabelResponseDTO> getAllLabels();
+    List<LabelResponseDTO> getAllLabels(Integer userId);
     LabelResponseDTO getLabelById(Integer id);
     LabelResponseDTO updateLabel(Integer id, LabelRequestDTO dto);
     void deleteLabel(Integer id);

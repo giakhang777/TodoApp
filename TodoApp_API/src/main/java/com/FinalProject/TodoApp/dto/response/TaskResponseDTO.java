@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -17,9 +18,11 @@ public class TaskResponseDTO extends BaseResponseDTO {
     private String title;
     private String priority;
     private LocalDate dueDate;
+    private String project;
     private String label;
     private String description;
     private Boolean reminder;
     private LocalDateTime reminderTime;
     private Boolean completed;
+    private List<SubResponseDTO> subTasks;
 }

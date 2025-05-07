@@ -30,7 +30,4 @@ public class Project extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "label_id")
     private Label label;
-
-    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Task> tasks;
 }

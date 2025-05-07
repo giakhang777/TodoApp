@@ -2,7 +2,6 @@ package com.example.apptodo.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -11,8 +10,8 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.apptodo.R;
+import com.example.apptodo.model.request.SignUpRequest;
 import com.example.apptodo.retrofit.RetrofitClient;
-import com.example.apptodo.model.ResetPassword;
 
 
 import java.util.Map;
@@ -72,7 +71,7 @@ public class ResetPasswordActivity extends AppCompatActivity {
     }
 
     private void resetPassword(String email, String newPassword) {
-        ResetPassword dto = new ResetPassword(email, newPassword);
+        SignUpRequest.ResetPassword dto = new SignUpRequest.ResetPassword(email, newPassword);
 
         RetrofitClient.getApiUserService().resetPassword(dto).enqueue(new Callback<Map<String, String>>() {
             @Override
