@@ -11,7 +11,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class ProjectRequestDTO {
-    @JsonProperty("user_id")
+    @JsonProperty("user_Id")
     @Min(value = 1, message = "User's ID must be > 0")
     private Integer userId;
 

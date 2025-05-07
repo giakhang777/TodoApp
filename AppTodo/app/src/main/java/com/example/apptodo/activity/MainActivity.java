@@ -1,16 +1,11 @@
 package com.example.apptodo.activity;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
-
-import android.app.DatePickerDialog;
 import android.app.Dialog;
-import android.app.TimePickerDialog;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,16 +14,25 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.Spinner;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.ViewModelProvider;
+
 import com.example.apptodo.R;
 import com.example.apptodo.databinding.ActivityMainBinding;
+import com.example.apptodo.activity.CalendarFragment;
+import com.example.apptodo.activity.HomeFragment;
+import com.example.apptodo.activity.ProfileFragment;
+import com.example.apptodo.activity.TasksFragment;
+import com.example.apptodo.model.UserResponse;
+import com.example.apptodo.viewmodel.SharedUserViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.textfield.TextInputEditText;
-
-import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
 
-    ActivityMainBinding binding;
+    private ActivityMainBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,10 +40,14 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        UserResponse user = (UserResponse) getIntent().getSerializableExtra("user");
+        SharedUserViewModel viewModel = new ViewModelProvider(this).get(SharedUserViewModel.class);
+        viewModel.setUser(user);
+
         // Mặc định mở Fragment Home
         replaceFragment(new HomeFragment());
 
-        // Xử lý sự kiện khi chọn menu trong BottomNavigationView
+        // Xử lý sự kiện chọn menu bottom
         binding.bottomNavigationView.setBackground(null);
         binding.bottomNavigationView.setOnItemSelectedListener(item -> {
             if (item.getItemId() == R.id.home) {
@@ -53,44 +61,41 @@ public class MainActivity extends AppCompatActivity {
             }
             return true;
         });
-        FloatingActionButton fab = findViewById(R.id.fab); // Chính xác
-        // Sự kiện cho FloatingActionButton
+
+        // Floating action button (Thêm task)
+        FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(view -> showBottomDialog());
-
-
     }
 
+
+
+    // Thay Fragment
     private void replaceFragment(Fragment fragment) {
         FragmentManager fragmentManager = getSupportFragmentManager();
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.replace(R.id.frame_layout, fragment);
-        fragmentTransaction.commit();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.replace(R.id.frame_layout, fragment);
+        transaction.commit();
     }
 
+    // Dialog thêm task
     private void showBottomDialog() {
-
         final Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.bottomsheetlayout);
 
-        // Lấy View root từ dialog
         View view = dialog.findViewById(android.R.id.content);
 
-        // Nút đóng
         ImageView cancelButton = view.findViewById(R.id.closeButton);
         cancelButton.setOnClickListener(v -> dialog.dismiss());
 
-        // Tìm Spinner đúng từ layout của dialog
         Spinner prioritySpinner = view.findViewById(R.id.prioritySpinner);
         Spinner projectSpinner = view.findViewById(R.id.projectSpinner);
         Spinner labelSpinner = view.findViewById(R.id.labelSpinner);
 
-        // Dữ liệu mẫu
         String[] priorities = {"Low", "Medium", "High"};
         String[] projects = {"Personal", "Work", "School"};
         String[] labels = {"Urgent", "Important", "Optional"};
 
-        // Adapter setup
         ArrayAdapter<String> priorityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, priorities);
         prioritySpinner.setAdapter(priorityAdapter);
 
@@ -100,7 +105,6 @@ public class MainActivity extends AppCompatActivity {
         ArrayAdapter<String> labelAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, labels);
         labelSpinner.setAdapter(labelAdapter);
 
-        // Hiển thị dialog
         dialog.show();
         if (dialog.getWindow() != null) {
             dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -109,6 +113,4 @@ public class MainActivity extends AppCompatActivity {
             dialog.getWindow().setGravity(Gravity.BOTTOM);
         }
     }
-
-
 }
