@@ -1,6 +1,5 @@
 package com.example.apptodo.activity;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,10 +7,15 @@ import android.view.ViewGroup;
 import android.widget.*;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
 import com.example.apptodo.R;
 import com.example.apptodo.adapter.NotificationAdapter;
+import com.example.apptodo.model.UserResponse;
+import com.example.apptodo.viewmodel.SharedUserViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,8 +26,11 @@ public class ProfileFragment extends Fragment {
     private NotificationAdapter notificationAdapter;
     private List<String> notifications = new ArrayList<>();
     private ArrayAdapter<String> projectAdapter;
-    private TextView tvNotificationCount;
+    private TextView tvNotificationCount, profileNameTextView;
     private ListView projectListView;
+
+    private ImageView profileImageView;
+    private SharedUserViewModel userViewModel;
 
     public ProfileFragment() {}
 
@@ -31,7 +38,12 @@ public class ProfileFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
 
-        // Ánh xạ view
+        // Khởi tạo ViewModel
+        userViewModel = new ViewModelProvider(requireActivity()).get(SharedUserViewModel.class);
+
+        // Ánh xạ View
+        profileImageView = view.findViewById(R.id.profile_image);
+        profileNameTextView = view.findViewById(R.id.profile_name);
         tvNotificationCount = view.findViewById(R.id.tv_notification_count);
         ImageButton btnNotification = view.findViewById(R.id.btn_notification);
         Button btnMyAccount = view.findViewById(R.id.btn_my_account);
@@ -39,7 +51,23 @@ public class ProfileFragment extends Fragment {
         Button btnCompleted = view.findViewById(R.id.btn_completed);
         projectListView = view.findViewById(R.id.project_list_view);
 
-        // Khởi tạo dữ liệu ban đầu
+        // Quan sát dữ liệu người dùng
+        userViewModel.getUser().observe(getViewLifecycleOwner(), user -> {
+            if (user != null && profileNameTextView != null) {
+                profileNameTextView.setText(user.getUsername());
+
+                // Sử dụng Glide để tải ảnh vào ImageView nếu có URL avatar
+                String avatarUrl = user.getAvatar(); // Lấy URL avatar từ đối tượng user
+                if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                    Glide.with(requireContext())
+                            .load(avatarUrl)  // URL ảnh đại diện
+                            .placeholder(R.drawable.defaulter_user) // Placeholder nếu không có ảnh
+                            .into(profileImageView);  // Đưa ảnh vào ImageView
+                }
+            }
+        });
+
+        // Khởi tạo dữ liệu
         projectAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, projectList);
         projectListView.setAdapter(projectAdapter);
         addNewProject("Project 1");
@@ -56,7 +84,7 @@ public class ProfileFragment extends Fragment {
         btnMyAccount.setOnClickListener(v -> openFragment(new AccountFragment()));
         btnAddProject.setOnClickListener(v -> addNewProject("Project " + (projectList.size() + 1)));
         btnCompleted.setOnClickListener(v -> openFragment(new HistoryFragment()));
-        btnNotification.setOnClickListener(v -> showNotificationPopup(v));
+        btnNotification.setOnClickListener(this::showNotificationPopup);
 
         return view;
     }

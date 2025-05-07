@@ -23,6 +23,7 @@
             android:layout_marginBottom="16dp">
 
             <ImageView
+                android:id="@+id/imageUserHome"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:src="@drawable/boy"
@@ -43,6 +44,7 @@
                     android:textSize="14sp" />
 
                 <TextView
+                    android:id="@+id/profileNameTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Livia Vaccaro"
@@ -50,11 +52,6 @@
                     android:textStyle="bold"
                     android:textColor="@color/black"/>
             </LinearLayout>
-
-            <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_notification" />
         </LinearLayout>
 
         <!-- Card with Pie Chart -->
