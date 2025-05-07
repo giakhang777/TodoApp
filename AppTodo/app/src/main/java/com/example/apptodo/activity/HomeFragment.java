@@ -6,19 +6,25 @@ import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
+import com.bumptech.glide.Glide;
 import com.example.apptodo.R;
 import com.example.apptodo.adapter.ProgressViewPageAdapter;
 import com.example.apptodo.adapter.TaskGroupAdapter;
 import com.example.apptodo.model.Progress;
+import com.example.apptodo.model.UserResponse;
+import com.example.apptodo.viewmodel.SharedUserViewModel;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
@@ -30,12 +36,15 @@ import java.util.List;
 public class HomeFragment extends Fragment {
 
     private RecyclerView rvTaskGroup;
-    private TextView countGroup, countProgress;
+    private TextView countGroup, countProgress, profileNameTextView; // Khai báo TextView
     private TaskGroupAdapter taskGroupAdapter;
     private List<Progress> listTaskGroup;
     private ViewPager viewPager;
     private List<Progress> listInProgress;
+    private ImageView profileImageView;
     private Handler handler = new Handler();
+
+    private SharedUserViewModel userViewModel;
 
     private final Runnable runnable = new Runnable() {
         @Override
@@ -60,6 +69,29 @@ public class HomeFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // Khởi tạo ViewModel
+        userViewModel = new ViewModelProvider(requireActivity()).get(SharedUserViewModel.class);
+
+        // Tham chiếu TextView profileNameTextView từ layout
+        profileNameTextView = view.findViewById(R.id.profileNameTextView); // Tham chiếu vào TextView
+        profileImageView = view.findViewById(R.id.imageUserHome);
+        // Quan sát dữ liệu user
+        userViewModel.getUser().observe(getViewLifecycleOwner(), user -> {
+            if (user != null && profileNameTextView != null) {
+                profileNameTextView.setText(user.getUsername());
+
+                // Sử dụng Glide để tải ảnh vào ImageView nếu có URL avatar
+                String avatarUrl = user.getAvatar(); // Lấy URL avatar từ đối tượng user
+                if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                    Glide.with(requireContext())
+                            .load(avatarUrl)  // URL ảnh đại diện
+                            .placeholder(R.drawable.defaulter_user) // Placeholder nếu không có ảnh
+                            .into(profileImageView);  // Đưa ảnh vào ImageView
+                }
+            }
+        });
+
         setPieChart(view);
         setViewPager(view);
         setTaskGroup(view);

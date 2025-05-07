@@ -56,7 +56,7 @@
                 android:layout_below="@id/hello_text"
                 android:layout_marginLeft="16dp"
                 android:layout_marginTop="4dp"
-                android:text="vghun"
+                android:text="name"
                 android:textColor="@color/black"
                 android:textSize="18sp"
                 android:textStyle="bold" />

@@ -1,16 +1,14 @@
 package com.FinalProject.TodoApp.controller;
 
 import com.FinalProject.TodoApp.dto.request.UserLoginRequestDTO;
+import com.FinalProject.TodoApp.dto.request.UserUpdateRequestDTO;
 import com.FinalProject.TodoApp.dto.response.UserResponseDTO;
 import com.FinalProject.TodoApp.entity.User;
 import com.FinalProject.TodoApp.service.IUserService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.Optional;
@@ -40,11 +38,19 @@ public class UserController {
             if (userService.authenticate(requestDTO.getUsername(), rawPassword)) {
                 // Nếu thành công, ánh xạ từ entity sang DTO để trả về
                 UserResponseDTO responseDTO = modelMapper.map(user, UserResponseDTO.class);
-                return ResponseEntity.ok(Map.of("user", responseDTO));
+                return ResponseEntity.ok(responseDTO);
+
             }
         }
 
         return ResponseEntity.status(401).body(Map.of("message", "Invalid username or password"));
     }
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable Integer id, @RequestBody UserUpdateRequestDTO updateDTO) {
+        User updatedUser = userService.updateUser(id, updateDTO);
+        UserResponseDTO responseDTO = modelMapper.map(updatedUser, UserResponseDTO.class);
+        return ResponseEntity.ok(responseDTO);
+    }
+
 
 }

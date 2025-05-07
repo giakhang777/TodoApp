@@ -35,6 +35,7 @@ android {
 }
 
 dependencies {
+    // Các thư viện đã có
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.cardview:cardview:1.0.0")
@@ -51,15 +52,21 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
-    implementation ("de.hdodenhof:circleimageview:3.1.0")
-    implementation ("com.github.bumptech.glide:glide:4.14.2")
-    annotationProcessor ("com.github.bumptech.glide:compiler:4.14.2")
-    implementation ("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation ("com.squareup.okhttp3:logging-interceptor:3.12.0")
-    implementation ("com.github.bumptech.glide:glide:4.12.0")
-    implementation ("com.squareup.picasso:picasso:2.71828")
-    implementation ("org.projectlombok:lombok:1.18.30")
-    annotationProcessor ("org.projectlombok:lombok:1.18.30")
+    implementation("de.hdodenhof:circleimageview:3.1.0")
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:3.12.0")
+    implementation("com.squareup.picasso:picasso:2.71828")
+    implementation("org.projectlombok:lombok:1.18.30")
+    annotationProcessor("org.projectlombok:lombok:1.18.30")
 
+    //  Cloudinary
+    implementation("com.cloudinary:cloudinary-android:3.0.2")
+    implementation("com.cloudinary:cloudinary-android-core:1.38.0")
+    implementation("com.cloudinary:cloudinary-android-preprocess:3.0.2")
+    implementation("com.cloudinary:cloudinary-android-download:3.0.2")
+    implementation("com.cloudinary:cloudinary-android-ui:3.0.2")
+
+    implementation("com.github.bumptech.glide:glide:4.16.0") // Glide cho tải ảnh
+    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 }

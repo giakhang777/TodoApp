@@ -15,6 +15,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+
     private Integer id;
 
     @Column(name = "user_name", unique = true)
@@ -34,4 +35,6 @@ public class User {
 
     @Column(name = "avatar")
     String avatar; // <- thuộc tính avatar mới
+
+
 }

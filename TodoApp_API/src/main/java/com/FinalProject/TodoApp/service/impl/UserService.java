@@ -1,5 +1,6 @@
 package com.FinalProject.TodoApp.service.impl;
 
+import com.FinalProject.TodoApp.dto.request.UserUpdateRequestDTO;
 import com.FinalProject.TodoApp.entity.User;
 import com.FinalProject.TodoApp.repository.UserRepository;
 import com.FinalProject.TodoApp.service.IUserService;
@@ -34,5 +35,16 @@ public class UserService implements IUserService {
     }
     public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
+    }
+
+    public User updateUser(Integer id, UserUpdateRequestDTO dto) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Tùy chỉnh: chỉ map khi field không null
+        if (dto.getUsername() != null) user.setUsername(dto.getUsername());
+        if (dto.getAvatar() != null) user.setAvatar(dto.getAvatar());
+
+        return userRepository.save(user);
     }
 }
