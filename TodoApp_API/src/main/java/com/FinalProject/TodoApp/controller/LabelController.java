@@ -25,10 +25,10 @@ public class LabelController {
         }
     }
 
-    @GetMapping("")
-    public ResponseEntity<?> getAllLabels() {
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<?> getAllLabels(@Valid @PathVariable Integer userId) {
         try {
-            List<LabelResponseDTO> labels = labelService.getAllLabels();
+            List<LabelResponseDTO> labels = labelService.getAllLabels(userId);
             return ResponseEntity.ok(labels);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
-import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RadioButton;
@@ -20,8 +19,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.example.apptodo.R;
 import com.example.apptodo.api.UserService;
-import com.example.apptodo.model.SignUpRequest;
-import com.example.apptodo.model.User;
+import com.example.apptodo.model.request.SignUpRequest;
 import com.example.apptodo.retrofit.RetrofitClient;
 
 import java.util.Map;

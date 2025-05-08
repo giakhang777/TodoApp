@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -14,7 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.apptodo.R;
 import com.example.apptodo.api.UserService;
-import com.example.apptodo.model.LoginRequest;
+import com.example.apptodo.model.request.LoginRequest;
 import com.example.apptodo.model.UserResponse;
 import com.example.apptodo.retrofit.RetrofitClient;
 

@@ -1,4 +1,4 @@
-package com.example.apptodo.model;
+package com.example.apptodo.model.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

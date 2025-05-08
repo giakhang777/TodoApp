@@ -17,10 +17,8 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.example.apptodo.R;
 import com.example.apptodo.api.UserService;
-import com.example.apptodo.model.EmailRequest;
-import com.example.apptodo.model.SignUpRequest;
+import com.example.apptodo.model.request.EmailRequest;
 import com.example.apptodo.retrofit.RetrofitClient;
-import com.google.gson.Gson;
 
 import java.util.Map;
 

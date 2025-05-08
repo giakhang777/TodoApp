@@ -55,25 +55,12 @@ public class ProjectService implements IProjectService {
     private ProjectResponseDTO mapProjectToResponseDTO(Project project) {
         ProjectResponseDTO dto = modelMapper.map(project, ProjectResponseDTO.class);
 
-        // Set title của label nếu có
-        if (project.getLabel() != null) {
-            dto.setLabel(project.getLabel().getTitle());
-        } else {
-            dto.setLabel(null);
-        }
+        // Gán tên label nếu có
+        dto.setLabel(project.getLabel() != null ? project.getLabel().getTitle() : null);
 
-        // Set taskCount và danh sách task nếu có
-        if (project.getTasks() != null) {
-            List<TaskResponseDTO> taskDTOs = project.getTasks().stream()
-                    .map(task -> modelMapper.map(task, TaskResponseDTO.class))
-                    .collect(Collectors.toList());
-
-            dto.setTasks(taskDTOs);
-            dto.setTaskCount(taskDTOs.size());
-        } else {
-            dto.setTaskCount(0);
-            dto.setTasks(null);
-        }
+        // Không còn tasks trong Project nên không set taskCount hoặc danh sách task
+        dto.setTaskCount(0);  // hoặc để null nếu muốn
+        dto.setTasks(null);
 
         return dto;
     }
@@ -84,7 +71,7 @@ public class ProjectService implements IProjectService {
                 .orElseThrow(() -> new DataNotFoundException("User không tồn tại với ID: " + dto.getUserId()));
 
         Label label = null;
-        if(dto.getLabelId() != null) {
+        if (dto.getLabelId() != null) {
             label = labelRepository.findById(dto.getLabelId())
                     .orElseThrow(() -> new DataNotFoundException("Label không tồn tại với ID: " + dto.getLabelId()));
         }
@@ -97,7 +84,6 @@ public class ProjectService implements IProjectService {
                 .build();
 
         Project saved = projectRepository.save(project);
-
         return mapProjectToResponseDTO(saved);
     }
 
@@ -106,13 +92,14 @@ public class ProjectService implements IProjectService {
         Project existingProject = projectRepository.findById(projectId)
                 .orElseThrow(() -> new DataNotFoundException("Project not found with ID: " + projectId));
 
-        User user = userRepository
-                .findById(projectRequest.getUserId())
+        User user = userRepository.findById(projectRequest.getUserId())
                 .orElseThrow(() -> new DataNotFoundException("User not found with ID: " + projectRequest.getUserId()));
 
-        Label label = labelRepository
-                .findById(projectRequest.getLabelId())
-                .orElseThrow(() -> new DataNotFoundException("Label not found with ID: " + projectRequest.getLabelId()));
+        Label label = null;
+        if (projectRequest.getLabelId() != null) {
+            label = labelRepository.findById(projectRequest.getLabelId())
+                    .orElseThrow(() -> new DataNotFoundException("Label not found with ID: " + projectRequest.getLabelId()));
+        }
 
         existingProject.setName(projectRequest.getName());
         existingProject.setColor(projectRequest.getColor());
@@ -120,7 +107,6 @@ public class ProjectService implements IProjectService {
         existingProject.setLabel(label);
 
         Project updatedProject = projectRepository.save(existingProject);
-
         return mapProjectToResponseDTO(updatedProject);
     }
 
@@ -131,4 +117,5 @@ public class ProjectService implements IProjectService {
         projectRepository.delete(existingProject);
     }
 }
+
 
