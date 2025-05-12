@@ -29,7 +29,6 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class CompletedTasksFragment extends Fragment implements TaskAdapter.OnTaskStatusUpdatedListener {
-
     private RecyclerView recyclerView;
     private TextView emptyTasksText;
     private TaskAdapter taskAdapter;
