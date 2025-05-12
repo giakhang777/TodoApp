@@ -3,13 +3,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="140dp"
+    android:layout_height="170dp"
     android:layout_marginStart="16dp"
     android:layout_marginEnd="16dp"
     app:cardCornerRadius="30dp">
     <LinearLayout
+        android:id="@+id/linearLayput"
         android:layout_width="match_parent"
-        android:layout_height="140dp"
+        android:layout_height="170dp"
         android:background="#D4E5FD"
         android:orientation="vertical"
         android:padding="16dp">
@@ -24,10 +25,10 @@
             <TextView
                 android:id="@+id/nameProject"
                 android:layout_width="0dp"
-                android:textSize="16dp"
+                android:textSize="17dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Office Project"
+                android:layout_weight="3"
+                android:text="Project"
                 android:textColor="#535557" />
 
             <TextView
@@ -35,21 +36,33 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Read"
+                android:text="Label"
                 android:textAlignment="viewEnd"
                 android:textColor="#535557"
-                android:textSize="16dp" />
+                android:textSize="17dp" />
         </LinearLayout>
 
         <TextView
             android:id="@+id/nameTask"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
             android:layout_weight="1"
-            android:text="Grocery shopping app design"
+            android:text="task"
             android:textColor="@color/black"
             android:textSize="20sp" />
+        <TextView
+            android:id="@+id/nameDesc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="16dp"
+            android:layout_weight="1"
+            android:text="desc"
+            android:textColor="@color/black"
+            android:textSize="16sp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:lines="2" />
 
         <ProgressBar
             android:id="@+id/progressBar"

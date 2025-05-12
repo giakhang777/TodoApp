@@ -41,10 +41,8 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.TaskGrou
     @Override
     public void onBindViewHolder(ProjectAdapter.TaskGroupViewHolder holder, int position) {
         Progress progress = list.get(position);
-        //holder.imgLogo.setImageResource(progress.getImageResId());
-        holder.desc1.setText(progress.getDesc1());
 
-        holder.desc2.setText(progress.getDesc2());
+        holder.nameProject.setText(progress.getNameProject());
         // Dữ liệu phần trăm
         ArrayList<PieEntry> entries = new ArrayList<>();
         entries.add(new PieEntry(progress.getProgress(), ""));
@@ -83,15 +81,12 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.TaskGrou
     }
     class TaskGroupViewHolder extends RecyclerView.ViewHolder {
         //private ImageView imgLogo;
-        private TextView desc1;
-        private TextView desc2;
+        private TextView nameProject;
         private PieChart pieChart;
 
         public TaskGroupViewHolder(View itemView) {
             super(itemView);
-            //imgLogo =(ImageView) itemView.findViewById(R.id.imgLogo);
-            desc1 =(TextView) itemView.findViewById(R.id.nameProject);
-            desc2 =(TextView) itemView.findViewById(R.id.countTask);
+            nameProject =(TextView) itemView.findViewById(R.id.nameProject);
             pieChart =(PieChart) itemView.findViewById(R.id.chart);
         }
     }

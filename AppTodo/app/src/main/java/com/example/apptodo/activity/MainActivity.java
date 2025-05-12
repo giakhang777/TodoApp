@@ -67,8 +67,6 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(view -> showBottomDialog());
     }
 
-
-
     // Thay Fragment
     private void replaceFragment(Fragment fragment) {
         FragmentManager fragmentManager = getSupportFragmentManager();

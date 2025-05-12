@@ -1,32 +1,60 @@
 package com.example.apptodo.model;
 
 public class Progress {
-    private int imageResId;
-    private String desc1;
-    private String desc2;
+    private String nameTask;
+    private String nameProject;
+    private String nameLabel;
+    private String priority;
+    private String description;
     private int progress;
 
-    public Progress(int imageResId, String desc1, String desc2, int progress) {
-        this.imageResId = imageResId;
-        this.desc1 = desc1;
-        this.desc2 = desc2;
+    public Progress(String nameTask, String nameProject, String nameLabel, String priority, String description, int progress) {
+        this.nameTask = nameTask;
+        this.nameProject = nameProject;
+        this.nameLabel = nameLabel;
+        this.priority = priority;
+        this.description = description;
         this.progress = progress;
     }
 
-    public String getDesc1() {
-        return desc1;
+    public String getPriority() {
+        return priority;
     }
 
-    public void setDesc1(String desc1) {
-        this.desc1 = desc1;
+    public void setPriority(String priority) {
+        this.priority = priority;
     }
 
-    public String getDesc2() {
-        return desc2;
+    public String getDescription() {
+        return description;
     }
 
-    public void setDesc2(String desc2) {
-        this.desc2 = desc2;
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getNameTask() {
+        return nameTask;
+    }
+
+    public void setNameTask(String nameTask) {
+        this.nameTask = nameTask;
+    }
+
+    public String getNameProject() {
+        return nameProject;
+    }
+
+    public void setNameProject(String nameProject) {
+        this.nameProject = nameProject;
+    }
+
+    public String getNameLabel() {
+        return nameLabel;
+    }
+
+    public void setNameLabel(String nameLabel) {
+        this.nameLabel = nameLabel;
     }
 
     public int getProgress() {
@@ -35,13 +63,5 @@ public class Progress {
 
     public void setProgress(int progress) {
         this.progress = progress;
-    }
-
-    public int getImageResId() {
-        return imageResId;
-    }
-
-    public void setImageResId(int imageResId) {
-        this.imageResId = imageResId;
     }
 }

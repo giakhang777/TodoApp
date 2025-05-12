@@ -7,7 +7,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "label")
+@Table(
+        name = "label",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"title", "user_id"})
+)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -20,6 +23,5 @@ public class Label {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
-
     private String title;
 }

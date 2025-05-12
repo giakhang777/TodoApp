@@ -11,12 +11,9 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class ProjectRequestDTO {
-    @JsonProperty("user_Id")
+    @JsonProperty("user_id")
     @Min(value = 1, message = "User's ID must be > 0")
     private Integer userId;
-
-    @JsonProperty("label_id")
-    private Integer labelId;
 
     @NotBlank(message = "Name is required")
     private String name;
