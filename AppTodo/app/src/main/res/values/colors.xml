@@ -13,4 +13,10 @@
     <color name="filter_inactive_border">#E0E0E0</color>
     <color name="filter_inactive_text">#757575</color>
     <color name="background">#F28076</color>
+    <color name="priority_high">#FFCDD2</color>
+    <color name="priority_medium">#FFE0B2</color>
+    <color name="priority_low">#BBDEFB</color>
+    <color name="priority_high_dark">#D32F2F</color>
+    <color name="priority_medium_dark">#FFA000</color>
+    <color name="priority_low_dark">#1E88E5</color>
 </resources>

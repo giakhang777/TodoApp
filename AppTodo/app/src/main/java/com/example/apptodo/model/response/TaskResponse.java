@@ -2,6 +2,9 @@ package com.example.apptodo.model.response;
 
 import com.example.apptodo.model.BaseModel;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 public class TaskResponse extends BaseModel {
     private Integer id;
     private String title;
@@ -11,18 +14,11 @@ public class TaskResponse extends BaseModel {
     private String project;
     private String description;
     private Boolean reminder;
-
-    public String getProject() {
-        return project;
-    }
-
-    public void setProject(String project) {
-        this.project = project;
-    }
-
+    private String reminderTime;
     private Boolean completed;
 
-    public TaskResponse(Integer id,String project, String title, String priority, String dueDate, String label, String description, Boolean reminder, Boolean completed) {
+    public TaskResponse(Integer id, String project, String title, String priority, String dueDate,
+                        String label, String description, Boolean reminder, String reminderTime, Boolean completed) {
         this.id = id;
         this.title = title;
         this.project = project;
@@ -31,7 +27,29 @@ public class TaskResponse extends BaseModel {
         this.label = label;
         this.description = description;
         this.reminder = reminder;
+        this.reminderTime = reminderTime; // 🆕
         this.completed = completed;
+    }
+
+    // Getter và Setter cho reminderTime
+    public String getReminderTime() {
+        if (reminderTime != null && !reminderTime.isEmpty()) {
+            // Chuyển reminderTime từ String thành LocalDateTime
+            DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+            LocalDateTime reminder = LocalDateTime.parse(reminderTime, formatter);
+
+            // Lấy giờ và phút từ LocalDateTime
+            int hour = reminder.getHour();
+            int minute = reminder.getMinute();
+
+            // Trả về chuỗi theo định dạng "HH:mm"
+            return String.format("%02d:%02d", hour, minute);
+        }
+        return null;
+    }
+
+    public void setReminderTime(String reminderTime) {
+        this.reminderTime = reminderTime;
     }
 
     public Integer getId() {
@@ -74,6 +92,14 @@ public class TaskResponse extends BaseModel {
         this.label = label;
     }
 
+    public String getProject() {
+        return project;
+    }
+
+    public void setProject(String project) {
+        this.project = project;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -98,3 +124,4 @@ public class TaskResponse extends BaseModel {
         this.completed = completed;
     }
 }
+
