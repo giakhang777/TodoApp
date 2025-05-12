@@ -1,5 +1,6 @@
 package com.FinalProject.TodoApp.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,4 +26,9 @@ public class TaskResponseDTO extends BaseResponseDTO {
     private LocalDateTime reminderTime;
     private Boolean completed;
     private List<SubResponseDTO> subTasks;
+    @JsonProperty("created_at")
+    private LocalDateTime createdAt;
+
+    @JsonProperty("updated_at")
+    private LocalDateTime updatedAt;
 }

@@ -2,6 +2,7 @@ package com.example.apptodo.retrofit;
 
 import com.example.apptodo.api.LabelService;
 import com.example.apptodo.api.ProjectService;
+import com.example.apptodo.api.SubTaskService;
 import com.example.apptodo.api.TaskService;
 import com.example.apptodo.api.UserService;
 import okhttp3.OkHttpClient;
@@ -14,17 +15,15 @@ public class RetrofitClient {
 
     public static Retrofit getRetrofit() {
         if (retrofit == null) {
-            // Tạo một OkHttpClient với cấu hình theo dõi chuyển hướng
             OkHttpClient client = new OkHttpClient.Builder()
-                    .followRedirects(true) // Bật theo dõi chuyển hướng HTTP
-                    .followSslRedirects(true) // Theo dõi chuyển hướng SSL
+                    .followRedirects(true)
+                    .followSslRedirects(true)
                     .build();
 
-            // Tạo Retrofit với OkHttpClient tùy chỉnh
             retrofit = new Retrofit.Builder()
-                    .baseUrl(BASE_URL) // Đường dẫn API
-                    .addConverterFactory(GsonConverterFactory.create()) // Chuyển JSON thành Object
-                    .client(client) // Thêm OkHttpClient vào Retrofit
+                    .baseUrl(BASE_URL)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .client(client)
                     .build();
         }
         return retrofit;
@@ -33,6 +32,7 @@ public class RetrofitClient {
     public static UserService getApiUserService() {
         return getRetrofit().create(UserService.class);
     }
+
     public static ProjectService getProjectService() {
         return getRetrofit().create(ProjectService.class);
     }
@@ -42,5 +42,9 @@ public class RetrofitClient {
 
     public static TaskService getTaskService() {
         return getRetrofit().create(TaskService.class);
+    }
+
+    public static SubTaskService getSubTaskService() {
+        return getRetrofit().create(SubTaskService.class);
     }
 }

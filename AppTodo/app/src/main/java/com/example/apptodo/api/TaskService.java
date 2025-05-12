@@ -30,6 +30,8 @@ public interface TaskService {
     @DELETE("/api/task/{id}")
     Call<Void> deleteTask(@Path("id") int taskId);
 
+    @GET("/api/task/user/{userId}")
+    Call<List<TaskResponse>> getTasksByUser(@Path("userId") int userId);
     @PATCH("/api/task/{taskId}/status")
     Call<TaskResponse> changeTaskStatus(@Path("taskId") int taskId, @Body Boolean completed);
 

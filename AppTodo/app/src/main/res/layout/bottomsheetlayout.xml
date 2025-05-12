@@ -100,27 +100,6 @@
             android:textColor="@android:color/black"
             android:layout_marginBottom="12dp" />
 
-        <!-- Due Time -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Due Time"
-            android:textStyle="bold"
-            android:textSize="16sp"
-            android:textColor="@android:color/black"
-            android:layout_marginBottom="4dp" />
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/dueTime"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Select Due Time"
-            android:focusable="false"
-            android:background="@drawable/edit_text_background"
-            android:padding="12dp"
-            android:textColor="@android:color/black"
-            android:layout_marginBottom="12dp" />
-
         <!-- Reminder Time -->
         <TextView
             android:layout_width="match_parent"
