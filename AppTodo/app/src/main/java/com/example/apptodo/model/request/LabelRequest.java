@@ -9,11 +9,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProjectRequest {
+
+public class LabelRequest {
     @SerializedName("user_id")
     private int userId;
 
-    private String name;
-    private String color;
-
+    private String title;
 }

@@ -15,14 +15,5 @@ public class UserResponse implements Serializable {
     private boolean isActive;
     private String avatar;
     // Nên có constructor không tham số nếu dùng với Intent
-    public UserResponse() {}
 
-    public UserResponse(Integer id, String username, String email, String gender, boolean isActive, String avatar) {
-        this.id = id;
-        this.username = username;
-        this.email = email;
-        this.gender = gender;
-        this.isActive = isActive;
-        this.avatar = avatar;
-    }
 }

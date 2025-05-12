@@ -2,17 +2,14 @@ package com.FinalProject.TodoApp.service.impl;
 
 import com.FinalProject.TodoApp.dto.request.ProjectRequestDTO;
 import com.FinalProject.TodoApp.dto.response.ProjectResponseDTO;
-import com.FinalProject.TodoApp.dto.response.TaskResponseDTO;
 import com.FinalProject.TodoApp.entity.Project;
 import com.FinalProject.TodoApp.entity.User;
 import com.FinalProject.TodoApp.exception.DataNotFoundException;
 import com.FinalProject.TodoApp.repository.ProjectRepository;
 import com.FinalProject.TodoApp.repository.UserRepository;
 import com.FinalProject.TodoApp.service.IProjectService;
-import com.FinalProject.TodoApp.service.ITaskService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,21 +19,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProjectService implements IProjectService {
 
-    @Autowired
-    private ProjectRepository projectRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private ModelMapper modelMapper;
-
-    @Autowired
-    private ITaskService taskService;
+    private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
+    private final ModelMapper modelMapper;
 
     @Override
     public List<ProjectResponseDTO> getAllProjects(Integer userId) {
         List<Project> projects = projectRepository.findByUserId(userId);
+
         return projects.stream()
                 .map(this::mapProjectToResponseDTO)
                 .collect(Collectors.toList());
@@ -46,16 +36,12 @@ public class ProjectService implements IProjectService {
     public ProjectResponseDTO getProjectById(Integer projectId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new DataNotFoundException("Project not found with ID: " + projectId));
+
         return mapProjectToResponseDTO(project);
     }
 
     private ProjectResponseDTO mapProjectToResponseDTO(Project project) {
         ProjectResponseDTO dto = modelMapper.map(project, ProjectResponseDTO.class);
-
-        List<TaskResponseDTO> taskDTOs = taskService.getTasksByProjectId(project.getId());
-
-        dto.setTaskCount(taskDTOs.size());
-        dto.setTasks(taskDTOs);
 
         return dto;
     }
@@ -76,21 +62,21 @@ public class ProjectService implements IProjectService {
     }
 
     @Override
-    public ProjectResponseDTO updateProject(Integer projectId, ProjectRequestDTO projectRequest) {
+    public ProjectResponseDTO updateProject(Integer projectId, ProjectRequestDTO dto) {
         Project existingProject = projectRepository.findById(projectId)
                 .orElseThrow(() -> new DataNotFoundException("Project not found with ID: " + projectId));
 
-        User user = userRepository.findById(projectRequest.getUserId())
-                .orElseThrow(() -> new DataNotFoundException("User not found with ID: " + projectRequest.getUserId()));
+        User user = userRepository.findById(dto.getUserId())
+                .orElseThrow(() -> new DataNotFoundException("User not found with ID: " + dto.getUserId()));
 
-        existingProject.setName(projectRequest.getName());
-        existingProject.setColor(projectRequest.getColor());
+        existingProject.setName(dto.getName());
+        existingProject.setColor(dto.getColor());
         existingProject.setUser(user);
 
         Project updatedProject = projectRepository.save(existingProject);
         return mapProjectToResponseDTO(updatedProject);
     }
-    
+
     @Override
     public void deleteProject(Integer projectId) {
         Project existingProject = projectRepository.findById(projectId)

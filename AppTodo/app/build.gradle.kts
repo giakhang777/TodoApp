@@ -71,4 +71,7 @@ dependencies {
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
     implementation ("androidx.viewpager2:viewpager2:1.0.0")
+
+    // https://mvnrepository.com/artifact/com.github.yukuku/ambilwarna
+    implementation("com.github.yukuku:ambilwarna:2.0.1")
 }

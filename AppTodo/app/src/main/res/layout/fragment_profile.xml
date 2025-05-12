@@ -31,7 +31,7 @@
                 android:layout_width="60dp"
                 android:layout_height="60dp"
                 android:layout_alignParentLeft="true"
-                android:src="@drawable/hung"
+                android:src="@drawable/defaulter_user"
                 app:civ_border_color="@color/white"
                 app:civ_border_width="2dp" />
 

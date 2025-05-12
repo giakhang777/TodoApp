@@ -40,7 +40,7 @@ public class ProjectController {
     }
 
     // Thêm mới project
-    @PostMapping("")
+    @PostMapping
     public ResponseEntity<?> createProject(@Valid @RequestBody ProjectRequestDTO projectRequest) {
         try {
             ProjectResponseDTO createdProject = projectService.createProject(projectRequest);

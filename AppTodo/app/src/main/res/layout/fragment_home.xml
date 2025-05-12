@@ -26,7 +26,7 @@
                 android:id="@+id/imageUserHome"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
-                android:src="@drawable/boy"
+                android:src="@drawable/defaulter_user"
                 android:scaleType="centerCrop"
                 android:background="@color/filter_inactive_bg"/>
 

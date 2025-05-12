@@ -2,8 +2,7 @@ package com.FinalProject.TodoApp.controller;
 
 import com.FinalProject.TodoApp.dto.request.LabelRequestDTO;
 import com.FinalProject.TodoApp.dto.response.LabelResponseDTO;
-import com.FinalProject.TodoApp.exception.DataNotFoundException;
-import com.FinalProject.TodoApp.service.impl.LabelService;
+import com.FinalProject.TodoApp.service.ILabelService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,9 +13,17 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/label")
 public class LabelController {
-
     @Autowired
-    private LabelService labelService;
+    private ILabelService labelService;
+
+    @PostMapping
+    public ResponseEntity<?> createLabel(@Valid @RequestBody LabelRequestDTO dto) {
+        try {
+            return ResponseEntity.ok(labelService.createLabel(dto));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<?> getAllLabels(@Valid @PathVariable Integer userId) {
@@ -28,35 +35,31 @@ public class LabelController {
         }
     }
 
-    @PostMapping("")
-    public ResponseEntity<?> createLabel(@Valid @RequestBody LabelRequestDTO labelRequest) {
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getLabelById(@PathVariable Integer id) {
         try {
-            LabelResponseDTO createdLabel = labelService.createLabel(labelRequest);
-            return ResponseEntity.ok(createdLabel);
+            return ResponseEntity.ok(labelService.getLabelById(id));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @PutMapping("/{labelId}")
-    public ResponseEntity<?> updateLabel(@Valid @PathVariable Integer labelId, @Valid @RequestBody LabelRequestDTO labelRequest) {
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateLabel(@PathVariable Integer id, @Valid @RequestBody LabelRequestDTO dto) {
         try {
-            LabelResponseDTO updatedLabel = labelService.updateLabel(labelId, labelRequest);
-            return ResponseEntity.ok(updatedLabel);
+            return ResponseEntity.ok(labelService.updateLabel(id, dto));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @DeleteMapping("/{labelId}")
-    public ResponseEntity<?> deleteLabel(@Valid @PathVariable Integer labelId) {
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteLabel(@PathVariable Integer id) {
         try {
-            labelService.deleteLabel(labelId);
+            labelService.deleteLabel(id);
             return ResponseEntity.ok("Label deleted successfully");
-        } catch (DataNotFoundException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Failed to delete label: " + e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }
