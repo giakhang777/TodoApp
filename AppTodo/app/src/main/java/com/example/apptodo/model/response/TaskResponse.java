@@ -2,8 +2,11 @@ package com.example.apptodo.model.response;
 
 import com.example.apptodo.model.BaseModel;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 public class TaskResponse extends BaseModel {
     private Integer id;
@@ -34,16 +37,20 @@ public class TaskResponse extends BaseModel {
     // Getter và Setter cho reminderTime
     public String getReminderTime() {
         if (reminderTime != null && !reminderTime.isEmpty()) {
-            // Chuyển reminderTime từ String thành LocalDateTime
-            DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
-            LocalDateTime reminder = LocalDateTime.parse(reminderTime, formatter);
+            try {
+                // Chuyển reminderTime từ String thành Date
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                Date reminderDate = formatter.parse(reminderTime);
 
-            // Lấy giờ và phút từ LocalDateTime
-            int hour = reminder.getHour();
-            int minute = reminder.getMinute();
+                // Lấy giờ và phút từ Date
+                int hour = reminderDate.getHours();
+                int minute = reminderDate.getMinutes();
 
-            // Trả về chuỗi theo định dạng "HH:mm"
-            return String.format("%02d:%02d", hour, minute);
+                // Trả về chuỗi theo định dạng "HH:mm"
+                return String.format("%02d:%02d", hour, minute);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
         }
         return null;
     }

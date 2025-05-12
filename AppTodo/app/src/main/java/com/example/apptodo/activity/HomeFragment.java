@@ -22,10 +22,13 @@ import com.bumptech.glide.Glide;
 import com.example.apptodo.R;
 import com.example.apptodo.adapter.InProgressViewPageAdapter;
 import com.example.apptodo.adapter.ProjectAdapter;
+import com.example.apptodo.api.ProjectService;
 import com.example.apptodo.api.TaskService;
 import com.example.apptodo.model.Progress;
+import com.example.apptodo.model.response.ProjectResponse;
 import com.example.apptodo.model.response.TaskResponse;
 import com.example.apptodo.retrofit.RetrofitClient;
+import com.example.apptodo.viewmodel.ProjectViewModel;
 import com.example.apptodo.viewmodel.SharedUserViewModel;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
@@ -44,8 +47,8 @@ public class HomeFragment extends Fragment {
 
     private RecyclerView rvProject;
     private TextView countGroup, countProgress, profileNameTextView;
-    private ProjectAdapter ProjectAdapter;
-    private List<Progress> listProject;
+    private ProjectAdapter projectAdapter;
+    private List<ProjectResponse> listProject;
     private ViewPager viewPager;
     private List<Progress> listInProgress;
     private ImageView profileImageView;
@@ -102,20 +105,40 @@ public class HomeFragment extends Fragment {
         rvProject = view.findViewById(R.id.rvTaskGroup);
         countGroup = view.findViewById(R.id.countGroup);
         listProject = new ArrayList<>();
-        listProject.add(new Progress("quang cao","quang cao", "quang cao", "lam viec 1","lam viec 1",  50));
-        listProject.add(new Progress("quang cao","quang cao", "coffee", "lam viec 2","lam viec 1",  75));
-        listProject.add(new Progress("quang cao","quang cao", "pizza", "lam viec 3","lam viec 1",  80));
-        listProject.add(new Progress("quang cao","quang cao", "ngon", "lam viec 4","lam viec 1",  92));
-        listProject.add(new Progress("quang cao","quang cao", "ngon", "lam viec 4","lam viec 1",  92));
-        listProject.add(new Progress("quang cao","quang cao", "ngon", "lam viec 4","lam viec 1",  92));
-        listProject.add(new Progress("quang cao","quang cao", "ngon", "lam viec 4","lam viec 1",  92));
+
+        projectAdapter = new ProjectAdapter(getContext(), listProject);
+        rvProject.setLayoutManager(new LinearLayoutManager(getContext()));
+        rvProject.setAdapter(projectAdapter);
+
+        // Khởi tạo ProjectViewModel
+        ProjectViewModel projectViewModel = new ViewModelProvider(requireActivity()).get(ProjectViewModel.class);
+
+        // Quan sát dữ liệu user
+        userViewModel.getUser().observe(getViewLifecycleOwner(), user -> {
+            if (user != null) {
+                // Chỉ fetch dữ liệu một lần nếu chưa có
+                if (projectViewModel.getProjectList().getValue().isEmpty()) {
+                    projectViewModel.fetchProjects(user.getId());
+                }
+            }
+        });
+
+        // Quan sát danh sách project từ ViewModel
+        projectViewModel.getProjectList().observe(getViewLifecycleOwner(), projects -> {
+            if (projects != null && !projects.isEmpty()) {
+                // Làm sạch danh sách dự án cũ trước khi thêm dữ liệu mới
+                listProject.clear();
 
 
-        ProjectAdapter = new ProjectAdapter(getContext(), listProject);
-        rvProject.setAdapter(ProjectAdapter);
-        rvProject.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
-        countGroup.setText(String.valueOf(listProject.size()));
+                // Thông báo cho Adapter về sự thay đổi dữ liệu
+                projectAdapter.updateData(projects);
+
+                // Cập nhật số lượng nhóm dự án
+                countGroup.setText(String.valueOf(projects.size()));
+            }
+        });
     }
+
 
     private void setViewPager(View view) {
         viewPager = view.findViewById(R.id.viewpage);
