@@ -16,7 +16,7 @@ public class LabelController {
     @Autowired
     private ILabelService labelService;
 
-    @PostMapping("")
+    @PostMapping
     public ResponseEntity<?> createLabel(@Valid @RequestBody LabelRequestDTO dto) {
         try {
             return ResponseEntity.ok(labelService.createLabel(dto));

@@ -7,11 +7,10 @@
     android:layout_height="match_parent"
     android:padding="16dp">
 
-    <!-- ScrollView để tránh nội dung bị tràn màn hình -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginBottom="100dp"> <!-- chừa chỗ cho nút Delete -->
+        android:layout_marginBottom="100dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -23,7 +22,6 @@
                 android:layout_width="294dp"
                 android:layout_height="122dp"
                 android:layout_marginTop="-50dp"
-                android:layout_marginBottom="0dp"
                 android:gravity="center"
                 android:text="My Profile"
                 android:textColor="@color/black"
@@ -49,6 +47,7 @@
                 app:tint="@color/black"
                 tools:ignore="TouchTargetSizeCheck" />
 
+            <!-- Account Name (không cho sửa) -->
             <EditText
                 android:id="@+id/et_account_name"
                 android:layout_width="match_parent"
@@ -57,8 +56,10 @@
                 android:background="@drawable/edit_text_background"
                 android:hint="Account Name"
                 android:minHeight="48dp"
-                android:padding="10dp" />
+                android:padding="10dp"
+                android:enabled="false" />
 
+            <!-- Email (không cho sửa) -->
             <EditText
                 android:id="@+id/et_email"
                 android:layout_width="match_parent"
@@ -68,8 +69,10 @@
                 android:hint="Email"
                 android:inputType="textEmailAddress"
                 android:minHeight="48dp"
-                android:padding="10dp" />
+                android:padding="10dp"
+                android:enabled="false" />
 
+            <!-- Gender (không cho sửa) -->
             <EditText
                 android:id="@+id/et_gender"
                 android:layout_width="match_parent"
@@ -78,16 +81,11 @@
                 android:background="@drawable/edit_text_background"
                 android:hint="Gender"
                 android:minHeight="48dp"
-                android:padding="10dp" />
+                android:padding="10dp"
+                android:enabled="false" />
 
-            <Button
-                android:id="@+id/btn_change_password"
-                android:layout_width="202dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="Change Password" />
+            <!-- Đã bỏ nút Change Password -->
 
-            <!-- Nút Save mới thêm -->
             <Button
                 android:id="@+id/btn_save"
                 android:layout_width="202dp"
@@ -106,7 +104,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- Nút xóa tài khoản cố định dưới cùng -->
     <Button
         android:id="@+id/btn_delete_account"
         android:layout_width="219dp"

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context="activity.HistoryFragment">
+
+    <!-- TextView tiêu đề -->
+    <TextView
+        android:id="@+id/titleText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:background="@drawable/date_item_selected_bg"
+        android:elevation="4dp"
+        android:lineSpacingExtra="4dp"
+        android:padding="16dp"
+        android:text="All Label"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <!-- Nút thêm nhãn ở góc phải dưới TextView -->
+
+    <!-- ListView bên dưới nút và tiêu đề -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/addButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/titleText"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="7dp"
+        android:layout_marginEnd="16dp"
+        android:contentDescription="Add Label"
+        android:src="@drawable/baseline_add_24"
+        app:backgroundTint="@color/lavender"
+        app:tint="@android:color/white" />
+
+    <ListView
+        android:id="@+id/labelListView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/addButton"
+        android:layout_marginTop="8dp"
+        android:padding="8dp"
+        android:divider="@android:color/darker_gray"
+        android:dividerHeight="1dp" />
+
+</RelativeLayout>

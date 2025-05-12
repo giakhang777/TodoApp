@@ -1,0 +1,63 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/bg_dialog_rounded">
+
+    <!-- Tiêu đề Add Project -->
+    <TextView
+        android:id="@+id/tv_dialog_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add Project"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:gravity="center"
+        android:paddingBottom="20dp" />
+
+    <!-- Nhập tên project -->
+    <EditText
+        android:id="@+id/et_project_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Project Name"
+        android:padding="12dp"
+        android:background="@drawable/edit_text_background"
+        android:textColor="@color/black"
+        android:textColorHint="#888888"
+        android:layout_marginBottom="16dp"
+        android:inputType="textPersonName" />
+
+    <!-- TextView chọn màu -->
+    <!-- Layout chọn màu -->
+    <LinearLayout
+        android:id="@+id/layout_color_picker"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/edit_text_background"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:layout_marginTop="8dp">
+
+        <!-- Text "Color." -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Color"
+            android:textColor="@color/black"
+            android:textSize="16sp"
+            android:layout_marginEnd="12dp" />
+
+        <!-- View hiện màu được chọn -->
+        <View
+            android:id="@+id/view_selected_color"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="@drawable/color_circle_default" />
+    </LinearLayout>
+
+</LinearLayout>

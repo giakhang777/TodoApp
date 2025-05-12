@@ -12,7 +12,4 @@ public class ProjectResponseDTO extends BaseResponseDTO {
     private Integer id;
     private String name;
     private String color;
-    private String label;
-    private int taskCount;
-    private List<TaskResponseDTO> tasks;
 }

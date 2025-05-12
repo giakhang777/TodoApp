@@ -27,7 +27,5 @@ public class Project extends BaseEntity {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToOne
-    @JoinColumn(name = "label_id")
-    private Label label;
+
 }
