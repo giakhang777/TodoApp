@@ -1,7 +1,6 @@
 package com.FinalProject.TodoApp.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
@@ -11,14 +10,14 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class ProjectRequestDTO {
-    @JsonProperty("user_Id")
-    @Min(value = 1, message = "User's ID must be > 0")
+
+    @JsonProperty("user_id")
+    @Min(value = 1, message = "User ID must be greater than 0")
     private Integer userId;
 
-    @JsonProperty("label_id")
-    private Integer labelId;
-
-    @NotBlank(message = "Name is required")
+    @NotBlank(message = "Project name is required")
     private String name;
+
+    @NotBlank(message = "Color is required")
     private String color;
 }

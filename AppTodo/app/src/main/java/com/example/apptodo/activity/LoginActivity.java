@@ -27,17 +27,25 @@ public class LoginActivity extends AppCompatActivity {
     private TextView tvSignUp, tvLogin, tvForgotPw;
     private EditText usernameEditText, passwordEditText;
     private CheckBox checkboxRemember;
+    private SharedPreferences prefs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Kiểm tra trạng thái đăng nhập
-        SharedPreferences prefs = getSharedPreferences("login_prefs", MODE_PRIVATE);
+        prefs = getSharedPreferences("login_prefs", MODE_PRIVATE);
+
+        // Kiểm tra trạng thái đăng nhập khi mở lại app
         boolean isLoggedIn = prefs.getBoolean("isLoggedIn", false);
-        if (isLoggedIn) {
-            navigateToMainActivity();
-            return;
+        boolean rememberMeChecked = prefs.getBoolean("rememberMeChecked", false);
+
+        // Nếu đã đăng nhập và Remember Me được chọn, tự động gọi lại API login
+        if (isLoggedIn && rememberMeChecked) {
+            String username = prefs.getString("username", "");
+            String password = prefs.getString("password", "");
+            if (!username.isEmpty() && !password.isEmpty()) {
+                loginUser(username, password);  // Gọi lại API login
+            }
         }
 
         setContentView(R.layout.activity_login);
@@ -56,8 +64,11 @@ public class LoginActivity extends AppCompatActivity {
 
     private void setupNavigation() {
         tvSignUp.setOnClickListener(view -> {
-            Intent intent = new Intent(LoginActivity.this, SignUpActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(LoginActivity.this, SignUpActivity.class));
+        });
+
+        tvForgotPw.setOnClickListener(view -> {
+            startActivity(new Intent(LoginActivity.this, ForgotPasswordActivity.class));
         });
 
         tvLogin.setOnClickListener(view -> {
@@ -69,11 +80,6 @@ public class LoginActivity extends AppCompatActivity {
             } else {
                 loginUser(username, password);
             }
-        });
-
-        tvForgotPw.setOnClickListener(view -> {
-            Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
-            startActivity(intent);
         });
     }
 
@@ -90,7 +96,7 @@ public class LoginActivity extends AppCompatActivity {
                 if (response.isSuccessful()) {
                     UserResponse userResponse = response.body();
                     if (userResponse != null) {
-                        handleSuccessfulLogin(userResponse);
+                        handleSuccessfulLogin(userResponse, username, password);
                     } else {
                         showErrorMessage("Dữ liệu trả về không hợp lệ");
                     }
@@ -101,21 +107,21 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<UserResponse> call, Throwable t) {
-                // Nếu có lỗi khi gọi API
                 Log.e("LoginError", "API call failed: " + t.getMessage(), t);
                 showErrorMessage("Lỗi kết nối, vui lòng thử lại!");
             }
         });
     }
 
-    private void handleSuccessfulLogin(UserResponse userResponse) {
+    private void handleSuccessfulLogin(UserResponse userResponse, String username, String password) {
         // Lưu thông tin người dùng nếu checkbox Remember me được chọn
         if (checkboxRemember.isChecked()) {
-            SharedPreferences prefs = getSharedPreferences("login_prefs", MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
             editor.putBoolean("isLoggedIn", true);
-            editor.putString("username", userResponse.getUsername());
-            editor.putInt("userId", userResponse.getId());
+            editor.putBoolean("rememberMeChecked", true);
+            editor.putString("username", username);
+            editor.putString("password", password);  // Lưu password (cẩn thận khi lưu password)
+            editor.putString("user_data", userResponse.getUsername());
             editor.apply();
         }
 
