@@ -9,6 +9,7 @@ import com.FinalProject.TodoApp.repository.LabelRepository;
 import com.FinalProject.TodoApp.repository.TaskRepository;
 import com.FinalProject.TodoApp.repository.UserRepository;
 import com.FinalProject.TodoApp.service.ILabelService;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,15 +86,17 @@ public class LabelService implements ILabelService {
         label = labelRepository.save(label);
         return modelMapper.map(label, LabelResponseDTO.class);
     }
-
+    @Transactional
     @Override
     public void deleteLabel(Integer id) {
         Label label = labelRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Label not found with ID: " + id));
 
-        // Cập nhật label_id của các task liên quan về null trước khi xóa label
+        // Cập nhật label_id của các Task có label tương ứng về null
         taskRepository.updateLabelIdToNull(id);
 
+        // Sau đó, xóa label
         labelRepository.delete(label);
     }
+
 }
