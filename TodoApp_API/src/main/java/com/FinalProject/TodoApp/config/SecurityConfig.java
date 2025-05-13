@@ -34,6 +34,7 @@ public class SecurityConfig {
                                 "/api/auth/reset-password",
                                 "/api/project/**",
                                 "/api/task/**",
+                                "/api/task/date/**",
                                 "/api/task/*/status",
                                 "/api/subtask/**",
                                 "/api/subtask/*/status",

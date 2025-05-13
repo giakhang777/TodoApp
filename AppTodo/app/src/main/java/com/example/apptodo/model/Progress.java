@@ -7,7 +7,6 @@ public class Progress {
     private String priority;
     private String description;
     private int progress;
-
     public Progress(String nameTask, String nameProject, String nameLabel, String priority, String description, int progress) {
         this.nameTask = nameTask;
         this.nameProject = nameProject;
