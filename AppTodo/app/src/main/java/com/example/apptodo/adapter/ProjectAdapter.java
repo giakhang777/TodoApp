@@ -2,9 +2,12 @@ package com.example.apptodo.adapter;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -29,7 +32,7 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.TaskGrou
     public ProjectAdapter(Context context, List<ProjectResponse> initialList) {
         this.context = context;
         this.layoutInflater = LayoutInflater.from(context);
-        this.projectList = new ArrayList<>(initialList); // Bảo vệ dữ liệu nội bộ
+        this.projectList = new ArrayList<>(initialList);
     }
 
     public void updateData(List<ProjectResponse> newProjects) {
@@ -51,34 +54,61 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.TaskGrou
 
         holder.nameProject.setText(project.getName());
 
-        try {
-            holder.nameProject.setTextColor(Color.parseColor(project.getColor()));
-        } catch (IllegalArgumentException e) {
-            holder.nameProject.setTextColor(Color.BLACK); // fallback màu mặc định
+        // Đổi màu nền giữ lại drawable (bo góc, viền...)
+        Drawable background = holder.itemContainer.getBackground();
+        if (background instanceof GradientDrawable) {
+            try {
+                int color = Color.parseColor(project.getColor());
+                ((GradientDrawable) background).setColor(color);
+            } catch (IllegalArgumentException e) {
+                ((GradientDrawable) background).setColor(Color.LTGRAY);
+            }
         }
 
-        // Chart hiển thị tạm thời 0% tiến độ
+        // Tính toán tỷ lệ hoàn thành
+        int totalTasks = project.getTotalTasks();
+        int completedTasks = project.getCompletedTasks();
+        float completionPercentage = totalTasks > 0 ? ((float) completedTasks / totalTasks) * 100 : 0;
+
+        // Lấy màu từ resources (lavender)
+        int lavenderColor = context.getResources().getColor(R.color.lavender, null);  // Lấy màu từ colors.xml
+
+        // Setup PieChart với dữ liệu hoàn thành
         List<PieEntry> pieEntries = new ArrayList<>();
-        pieEntries.add(new PieEntry(0f, "Done"));
-        pieEntries.add(new PieEntry(100f, "Remain"));
+        pieEntries.add(new PieEntry(completionPercentage, "Done"));
+        pieEntries.add(new PieEntry(100 - completionPercentage, "Remaining"));
 
         PieDataSet dataSet = new PieDataSet(pieEntries, null);
-        dataSet.setColors(Color.BLUE, Color.TRANSPARENT);
-        dataSet.setDrawValues(false);
+        dataSet.setColors(lavenderColor, Color.GRAY);  // Sử dụng màu lavender cho phần đã hoàn thành và màu xám cho phần còn lại
+        dataSet.setDrawValues(false);  // Không hiển thị giá trị trên biểu đồ
+
+        // Thêm đường viền nổi bật cho mỗi lát pie
+        dataSet.setSliceSpace(5f);  // Tạo khoảng cách giữa các lát để đường viền được rõ hơn
+        dataSet.setValueLineWidth(4f);  // Độ dày của đường viền trong các mảng
+        dataSet.setValueLineColor(Color.WHITE);  // Màu đường viền của các lát pie
 
         PieData pieData = new PieData(dataSet);
         holder.pieChart.setData(pieData);
-        holder.pieChart.setDrawHoleEnabled(true);
-        holder.pieChart.setHoleRadius(75f);
-        holder.pieChart.setTransparentCircleRadius(55f);
-        holder.pieChart.setHoleColor(Color.TRANSPARENT);
-        holder.pieChart.setCenterText("0%");
+        holder.pieChart.setDrawHoleEnabled(true);  // Lỗ ở giữa
+        holder.pieChart.setHoleRadius(75f);  // Kích thước lỗ giữa
+        holder.pieChart.setTransparentCircleRadius(55f);  // Kích thước vòng tròn trong suốt
+        holder.pieChart.setHoleColor(Color.TRANSPARENT);  // Màu lỗ giữa
+
+        // Hiển thị tỷ lệ hoàn thành
+        holder.pieChart.setCenterText(String.format("%.0f%%", completionPercentage));
         holder.pieChart.setCenterTextSize(16f);
-        holder.pieChart.setCenterTextColor(Color.WHITE);
-        holder.pieChart.getDescription().setEnabled(false);
-        holder.pieChart.getLegend().setEnabled(false);
-        holder.pieChart.invalidate();
+
+        // Set màu chữ là màu đen
+        holder.pieChart.setCenterTextColor(Color.BLACK);  // Đổi màu chữ phần trăm thành màu đen
+        holder.pieChart.getDescription().setEnabled(false);  // Tắt mô tả của biểu đồ
+        holder.pieChart.getLegend().setEnabled(false);  // Tắt biểu tượng legend
+
+        // Set màu nhãn (phần trăm) của PieChart là màu đen
+        holder.pieChart.setEntryLabelColor(Color.BLACK);  // Màu chữ nhãn là màu đen
+
+        holder.pieChart.invalidate();  // Cập nhật PieChart
     }
+
 
     @Override
     public int getItemCount() {
@@ -88,11 +118,13 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.TaskGrou
     static class TaskGroupViewHolder extends RecyclerView.ViewHolder {
         TextView nameProject;
         PieChart pieChart;
+        LinearLayout itemContainer;
 
         public TaskGroupViewHolder(View itemView) {
             super(itemView);
             nameProject = itemView.findViewById(R.id.nameProject);
             pieChart = itemView.findViewById(R.id.chart);
+            itemContainer = itemView.findViewById(R.id.itemContainer); // View cần đổi màu
         }
     }
 }

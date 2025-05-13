@@ -7,5 +7,7 @@ public class ProjectResponse {
     private int id;
     private String name;
     private String color;
+    private int totalTasks;
+    private int completedTasks;
 
 }

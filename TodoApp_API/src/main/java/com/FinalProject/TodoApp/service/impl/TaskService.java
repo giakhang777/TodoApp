@@ -44,18 +44,22 @@ public class TaskService implements ITaskService {
 
     @Override
     public TaskResponseDTO createTask(TaskRequestDTO dto) {
+        // Lấy user
         User user = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new DataNotFoundException("User not found with ID: " + dto.getUserId()));
 
+        // Lấy project
         Project project = projectRepository.findById(dto.getProjectId())
                 .orElseThrow(() -> new DataNotFoundException("Project not found with ID: " + dto.getProjectId()));
 
+        // Lấy label nếu có
         Label label = null;
         if (dto.getLabelId() != null) {
             label = labelRepository.findById(dto.getLabelId())
                     .orElseThrow(() -> new DataNotFoundException("Label not found with ID: " + dto.getLabelId()));
         }
 
+        // Tạo task mới
         Task task = Task.builder()
                 .title(dto.getTitle())
                 .priority(dto.getPriority())
@@ -73,20 +77,27 @@ public class TaskService implements ITaskService {
         return mapTaskToResponseDTO(savedTask);
     }
 
+
     @Override
     public TaskResponseDTO updateTask(Integer id, TaskRequestDTO dto) {
+        // Tìm task cần update
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Task not found with ID: " + id));
 
+        // Lấy lại thông tin project
         Project project = projectRepository.findById(dto.getProjectId())
                 .orElseThrow(() -> new DataNotFoundException("Project not found with ID: " + dto.getProjectId()));
 
+        // Lấy label nếu có
         Label label = null;
         if (dto.getLabelId() != null) {
             label = labelRepository.findById(dto.getLabelId())
                     .orElseThrow(() -> new DataNotFoundException("Label not found with ID: " + dto.getLabelId()));
         }
 
+        // Không thay đổi userId (chỉ cho tạo ban đầu), tránh lỗi gán sai user
+
+        // Cập nhật các trường
         task.setTitle(dto.getTitle());
         task.setPriority(dto.getPriority());
         task.setDueDate(dto.getDueDate());
@@ -99,6 +110,7 @@ public class TaskService implements ITaskService {
         Task updatedTask = taskRepository.save(task);
         return mapTaskToResponseDTO(updatedTask);
     }
+
 
     @Override
     public TaskResponseDTO getTaskById(Integer id) {
@@ -114,7 +126,6 @@ public class TaskService implements ITaskService {
                 .map(this::mapTaskToResponseDTO)
                 .collect(Collectors.toList());
     }
-
     @Override
     public List<TaskResponseDTO> getTasksByUserId(Integer userId) {
         List<Task> tasks = taskRepository.findByUserId(userId);
@@ -128,7 +139,10 @@ public class TaskService implements ITaskService {
         Task existing = taskRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Task not found with ID: " + id));
 
-        subTaskRepository.deleteByTaskId(id);
+        // Xoá tất cả SubTask liên quan đến Task
+        subTaskRepository.deleteByTaskId(id);  // Phương thức này xoá các SubTask liên quan
+
+        // Sau đó xoá Task
         taskRepository.delete(existing);
     }
 
@@ -142,13 +156,6 @@ public class TaskService implements ITaskService {
         return mapTaskToResponseDTO(updated);
     }
 
-    @Override
-    public List<TaskResponseDTO> getAllByDate(LocalDate date, Integer userId) {
-        List<Task> tasks = taskRepository.findByDueDateAndUserId(date, userId);
-        return tasks.stream()
-                .map(this::mapTaskToResponseDTO)
-                .collect(Collectors.toList());
-    }
 
     private TaskResponseDTO mapTaskToResponseDTO(Task task) {
         // Cấu hình cục bộ để bỏ qua các thuộc tính không tương thích
@@ -177,11 +184,28 @@ public class TaskService implements ITaskService {
         dto.setLabel(task.getLabel() != null ? task.getLabel().getTitle() : null);
         dto.setProject(task.getProject() != null ? task.getProject().getName() : null);
 
+        // Lấy tên của project từ đối tượng project và gán cho dto
+        if (task.getProject() != null) {
+            dto.setProject(task.getProject().getName());  // Lấy tên của project
+        } else {
+            dto.setProject(null);  // Nếu không có project thì set null
+        }
+
+        // Lấy danh sách subTasks từ SubTaskRepository
         List<SubResponseDTO> subTasks = subTaskRepository.findByTaskId(task.getId()).stream()
                 .map(subTask -> modelMapper.map(subTask, SubResponseDTO.class))
                 .collect(Collectors.toList());
+
         dto.setSubTasks(subTasks);
 
         return dto;
+    }
+    @Override
+    public List<TaskResponseDTO> getAllByDate(LocalDate date, Integer userId) {
+        List<Task> tasks = taskRepository.findByDueDateAndUserId(date,userId);
+
+        return tasks.stream()
+                .map(this::mapTaskToResponseDTO)
+                .collect(Collectors.toList());
     }
 }
