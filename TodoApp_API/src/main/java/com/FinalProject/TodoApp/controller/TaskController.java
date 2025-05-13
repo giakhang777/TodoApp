@@ -87,10 +87,10 @@ public class TaskController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    @GetMapping("/date/{date}")
-    public ResponseEntity<?> getTasksByDate(@Valid @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+    @GetMapping("/date/{date}/{userId}")
+    public ResponseEntity<?> getTasksByDate(@Valid @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @Valid @PathVariable Integer userId) {
         try {
-            List<TaskResponseDTO> tasks = taskService.getAllByDate(date);
+            List<TaskResponseDTO> tasks = taskService.getAllByDate(date,userId);
             return ResponseEntity.ok(tasks);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

@@ -178,8 +178,8 @@ public class TaskService implements ITaskService {
         return dto;
     }
     @Override
-    public List<TaskResponseDTO> getAllByDate(LocalDate date) {
-        List<Task> tasks = taskRepository.findByDueDate(date);
+    public List<TaskResponseDTO> getAllByDate(LocalDate date, Integer userId) {
+        List<Task> tasks = taskRepository.findByDueDateAndUserId(date,userId);
 
         return tasks.stream()
                 .map(this::mapTaskToResponseDTO)

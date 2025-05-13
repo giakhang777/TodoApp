@@ -14,7 +14,7 @@ import java.util.List;
 public interface TaskRepository extends JpaRepository<Task, Integer> {
     List<Task> findByProjectId(Integer projectId);
     List<Task> findByUserId(Integer userId);
-    List<Task> findByDueDate(LocalDate dueDate);
+    List<Task> findByDueDateAndUserId(LocalDate dueDate, Integer userId);
     @Modifying
     @Query("UPDATE Task t SET t.label = NULL WHERE t.label.id = ?1")
     void updateLabelIdToNull(Integer labelId);
