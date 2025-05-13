@@ -23,7 +23,7 @@
             android:layout_height="50dp"
             android:src="@drawable/defaulter_user"
             android:scaleType="centerCrop"
-            android:background="@color/filter_inactive_bg"/>
+            android:background="@color/filter_inactive_bg" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -79,7 +79,7 @@
                     android:textSize="16sp" />
 
                 <Button
-                    android:id="@+id/btnViewTask"
+                    android:id="@+id/button"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
@@ -132,16 +132,7 @@
         android:layout_height="170dp"
         android:layout_marginBottom="16dp"
         android:contentDescription="@string/close_nav" />
-    <!-- Placeholder for tasks list -->
-    <TextView
-        android:id="@+id/tvNoTaskToday"
-        android:layout_width="match_parent"
-        android:layout_height="170dp"
-        android:text="No tasks for today"
-        android:gravity="center"
-        android:textSize="18sp"
-        android:textColor="@color/black"
-        android:visibility="gone"/>
+
     <!-- Task Group -->
     <LinearLayout
         android:layout_width="match_parent"
@@ -171,12 +162,15 @@
             android:textStyle="bold"/>
     </LinearLayout>
 
-    <!-- RecyclerView scrolls -->
+    <!-- ✅ RecyclerView cuộn đúng -->
+    <!-- ✅ RecyclerView cuộn đúng và không bị che bởi Navigation -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvTaskGroup"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:overScrollMode="always" />
+        android:layout_height="wrap_content"
+        android:overScrollMode="always"
+        android:clipToPadding="false"
+        android:paddingBottom="200dp"
+        android:layout_marginBottom="16dp"/>
 
 </LinearLayout>
