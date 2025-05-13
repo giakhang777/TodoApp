@@ -14,5 +14,5 @@ public interface ITaskService {
     void deleteTask(Integer id);
     TaskResponseDTO changeTaskStatus(Integer taskId, Boolean completed);
     List<TaskResponseDTO> getTasksByUserId(Integer userId);
-    List<TaskResponseDTO> getAllByDate(LocalDate date);
+    List<TaskResponseDTO> getAllByDate(LocalDate date, Integer userId);
 }

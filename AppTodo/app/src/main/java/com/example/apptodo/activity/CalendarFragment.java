@@ -10,6 +10,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -20,6 +21,7 @@ import com.example.apptodo.api.TaskService;
 import com.example.apptodo.model.DateItem;
 import com.example.apptodo.model.response.TaskResponse;
 import com.example.apptodo.retrofit.RetrofitClient;
+import com.example.apptodo.viewmodel.SharedUserViewModel;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -42,6 +44,8 @@ public class CalendarFragment extends Fragment implements DateAdapter.OnDateClic
     private List<DateItem> dateItems = new ArrayList<>();
     private List<TaskResponse> taskList = new ArrayList<>();
     private TaskService taskService;
+    private SharedUserViewModel sharedUserViewModel;
+    private Integer userId;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
@@ -61,7 +65,16 @@ public class CalendarFragment extends Fragment implements DateAdapter.OnDateClic
 
         dateDisplay.setOnClickListener(v -> showDatePickerDialog());
 
-        setupDateList();
+        // Lấy userId từ SharedUserViewModel
+        sharedUserViewModel = new ViewModelProvider(requireActivity()).get(SharedUserViewModel.class);
+        sharedUserViewModel.getUser().observe(getViewLifecycleOwner(), userResponse -> {
+            if (userResponse != null && userResponse.getId() != null && isAdded()) {
+                userId = userResponse.getId();
+                setupDateList();
+            } else {
+                Toast.makeText(getContext(), "User not logged in or data unavailable", Toast.LENGTH_SHORT).show();
+            }
+        });
 
         return view;
     }
@@ -166,10 +179,15 @@ public class CalendarFragment extends Fragment implements DateAdapter.OnDateClic
     }
 
     private void loadTasksForDate(Date date) {
+        if (userId == null) {
+            Toast.makeText(getContext(), "User ID not available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         String formattedDate = sdf.format(date);
 
-        taskService.getTasksByDate(formattedDate).enqueue(new Callback<List<TaskResponse>>() {
+        taskService.getTasksByDate(formattedDate, userId).enqueue(new Callback<List<TaskResponse>>() {
             @Override
             public void onResponse(Call<List<TaskResponse>> call, Response<List<TaskResponse>> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -197,7 +215,7 @@ public class CalendarFragment extends Fragment implements DateAdapter.OnDateClic
                 taskList.clear();
                 taskAdapter.setTaskList(taskList);
                 updateEmptyTasksVisibility();
-                Toast.makeText(getContext(), "Failed to load tasks", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Failed to load tasks: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

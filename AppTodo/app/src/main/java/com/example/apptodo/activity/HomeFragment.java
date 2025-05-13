@@ -46,7 +46,7 @@ import retrofit2.Response;
 public class HomeFragment extends Fragment {
 
     private RecyclerView rvProject;
-    private TextView countGroup, countProgress, profileNameTextView;
+    private TextView countGroup, countProgress, profileNameTextView, tvNoTaskToday;
     private ProjectAdapter projectAdapter;
     private List<ProjectResponse> listProject;
     private ViewPager viewPager;
@@ -82,7 +82,7 @@ public class HomeFragment extends Fragment {
         userViewModel = new ViewModelProvider(requireActivity()).get(SharedUserViewModel.class);
         profileNameTextView = view.findViewById(R.id.profileNameTextView);
         profileImageView = view.findViewById(R.id.imageUserHome);
-
+        tvNoTaskToday = view.findViewById(R.id.tvNoTaskToday);
         userViewModel.getUser().observe(getViewLifecycleOwner(), user -> {
             if (user != null) {
                 profileNameTextView.setText(user.getUsername());
@@ -144,7 +144,11 @@ public class HomeFragment extends Fragment {
         viewPager = view.findViewById(R.id.viewpage);
         countProgress = view.findViewById(R.id.countProgress);
         listInProgress = new ArrayList<>();
-        getListTaskFromApi();
+        userViewModel.getUser().observe(getViewLifecycleOwner(), user -> {
+            if (user != null) {
+                getListTaskFromApi(user.getId());
+            }
+        });
         handler.postDelayed(runnable, 3000);
 
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
@@ -157,13 +161,13 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    private void getListTaskFromApi() {
+    private void getListTaskFromApi(int userId) {
 //        String today = LocalDate.now().toString();
-        String today = "2025-05-17";
+        String today = "2025-05-16";
 
         TaskService taskService = RetrofitClient.getRetrofit().create(TaskService.class);
 
-        taskService.getTasksByDate(today).enqueue(new Callback<List<TaskResponse>>() {
+        taskService.getTasksByDate(today,userId).enqueue(new Callback<List<TaskResponse>>() {
             @Override
             public void onResponse(Call<List<TaskResponse>> call, Response<List<TaskResponse>> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -189,7 +193,13 @@ public class HomeFragment extends Fragment {
                                 60
                         ));
                     }
-
+                    if (listInProgress.isEmpty()) {
+                        tvNoTaskToday.setVisibility(View.VISIBLE);
+                        viewPager.setVisibility(View.GONE);
+                    } else {
+                        tvNoTaskToday.setVisibility(View.GONE);
+                        viewPager.setVisibility(View.VISIBLE);
+                    }
                     InProgressViewPageAdapter adapter = new InProgressViewPageAdapter(listInProgress);
                     viewPager.setAdapter(adapter);
                     countProgress.setText(String.valueOf(listInProgress.size()));
