@@ -111,6 +111,34 @@ public class ProfileFragment extends Fragment {
         };
         projectListView.setAdapter(adapter);
         adapter.notifyDataSetChanged();
+
+        // Long click listener to delete project
+        projectListView.setOnItemLongClickListener((parent, view, position, id) -> {
+            ProjectResponse selectedProject = projectList.get(position);
+            showDeleteConfirmationDialog(selectedProject);
+            return true;  // Return true to indicate that the event is consumed
+        });
+    }
+    private void deleteProject(ProjectResponse project) {
+        ProjectService service = RetrofitClient.getProjectService();
+
+        service.deleteProject(project.getId()).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    // Nếu xoá thành công, cập nhật lại danh sách dự án
+                    projectViewModel.removeProject(project);
+                    Toast.makeText(getContext(), "Project deleted successfully", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getContext(), "Failed to delete project", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void showAddProjectDialog() {
@@ -169,8 +197,8 @@ public class ProfileFragment extends Fragment {
 
     private void showColorPickerDialog(View viewSelectedColor) {
         final String[] colors = {
-                "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF",
-                "#000000", "#FFFFFF", "#808080", "#C0C0C0", "#800000", "#008000"
+                "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"
+                , "#FFFFFF", "#808080", "#C0C0C0", "#800000", "#008000"
         };
 
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
@@ -225,4 +253,13 @@ public class ProfileFragment extends Fragment {
         transaction.addToBackStack(null);
         transaction.commit();
     }
+    private void showDeleteConfirmationDialog(ProjectResponse project) {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Delete Project")
+                .setMessage("Are you sure you want to delete the project \"" + project.getName() + "\"?")
+                .setPositiveButton("Yes", (dialog, which) -> deleteProject(project))
+                .setNegativeButton("No", null)
+                .show();
+    }
+
 }

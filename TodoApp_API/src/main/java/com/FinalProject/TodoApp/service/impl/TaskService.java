@@ -137,8 +137,14 @@ public class TaskService implements ITaskService {
     public void deleteTask(Integer id) {
         Task existing = taskRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Task not found with ID: " + id));
+
+        // Xoá tất cả SubTask liên quan đến Task
+        subTaskRepository.deleteByTaskId(id);  // Phương thức này xoá các SubTask liên quan
+
+        // Sau đó xoá Task
         taskRepository.delete(existing);
     }
+
 
     @Override
     public TaskResponseDTO changeTaskStatus(Integer taskId, Boolean completed) {

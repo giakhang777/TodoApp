@@ -12,4 +12,6 @@ public class ProjectResponseDTO extends BaseResponseDTO {
     private Integer id;
     private String name;
     private String color;
+    private int totalTasks;      // Thêm số lượng task
+    private int completedTasks;
 }

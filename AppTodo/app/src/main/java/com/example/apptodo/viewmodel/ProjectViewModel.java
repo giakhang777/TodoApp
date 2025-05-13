@@ -49,4 +49,11 @@ public class ProjectViewModel extends ViewModel {
             projectList.setValue(new ArrayList<>(current));  // Cập nhật lại LiveData
         }
     }
+    public void removeProject(ProjectResponse project) {
+        List<ProjectResponse> currentProjects = projectList.getValue();
+        if (currentProjects != null) {
+            currentProjects.remove(project);
+            projectList.setValue(currentProjects);  // Cập nhật danh sách
+        }
+    }
 }
