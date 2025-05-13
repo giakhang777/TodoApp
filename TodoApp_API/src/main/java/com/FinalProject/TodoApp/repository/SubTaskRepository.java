@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface SubTaskRepository extends JpaRepository<SubTask, Integer> {
     List<SubTask> findByTaskId(Integer taskId);
+    void deleteByTaskId(Integer taskId);
 }
