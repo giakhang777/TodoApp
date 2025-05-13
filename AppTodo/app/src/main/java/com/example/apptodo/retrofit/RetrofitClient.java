@@ -5,7 +5,9 @@ import com.example.apptodo.api.ProjectService;
 import com.example.apptodo.api.SubTaskService;
 import com.example.apptodo.api.TaskService;
 import com.example.apptodo.api.UserService;
+
 import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor; // Thêm import này
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -15,10 +17,15 @@ public class RetrofitClient {
 
     public static Retrofit getRetrofit() {
         if (retrofit == null) {
-            OkHttpClient client = new OkHttpClient.Builder()
+            HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
+            loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+            OkHttpClient.Builder httpClientBuilder = new OkHttpClient.Builder()
                     .followRedirects(true)
                     .followSslRedirects(true)
-                    .build();
+                    .addInterceptor(loggingInterceptor);
+
+            OkHttpClient client = httpClientBuilder.build();
 
             retrofit = new Retrofit.Builder()
                     .baseUrl(BASE_URL)

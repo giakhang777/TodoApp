@@ -12,6 +12,7 @@ import com.FinalProject.TodoApp.repository.*;
 import com.FinalProject.TodoApp.service.ITaskService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -145,7 +146,6 @@ public class TaskService implements ITaskService {
         taskRepository.delete(existing);
     }
 
-
     @Override
     public TaskResponseDTO changeTaskStatus(Integer taskId, Boolean completed) {
         Task task = taskRepository.findById(taskId)
@@ -156,16 +156,33 @@ public class TaskService implements ITaskService {
         return mapTaskToResponseDTO(updated);
     }
 
+
     private TaskResponseDTO mapTaskToResponseDTO(Task task) {
-        // Cấu hình ModelMapper ánh xạ các trường cần thiết
+        // Cấu hình cục bộ để bỏ qua các thuộc tính không tương thích
+        TypeMap<Task, TaskResponseDTO> typeMap = modelMapper.getTypeMap(Task.class, TaskResponseDTO.class);
+        if (typeMap == null) {
+            typeMap = modelMapper.createTypeMap(Task.class, TaskResponseDTO.class);
+            typeMap.addMappings(mapper -> {
+                mapper.skip(TaskResponseDTO::setProject); // Bỏ qua project
+                mapper.skip(TaskResponseDTO::setLabel);   // Bỏ qua label
+                mapper.skip(TaskResponseDTO::setSubTasks); // Bỏ qua subTasks
+                // Bỏ qua user (nếu TaskResponseDTO không có thuộc tính user)
+                mapper.skip((dest, value) -> {
+                    try {
+                        dest.getClass().getMethod("setUser", Object.class);
+                    } catch (NoSuchMethodException e) {
+                        // Nếu không có setUser, bỏ qua
+                    }
+                });
+            });
+        }
+
+        // Ánh xạ các thuộc tính cơ bản
         TaskResponseDTO dto = modelMapper.map(task, TaskResponseDTO.class);
 
-        // Ánh xạ thủ công tên của label, nếu có
-        if (task.getLabel() != null) {
-            dto.setLabel(task.getLabel().getTitle());
-        } else {
-            dto.setLabel(null);
-        }
+        // Ánh xạ thủ công cho project, label, và subTasks
+        dto.setLabel(task.getLabel() != null ? task.getLabel().getTitle() : null);
+        dto.setProject(task.getProject() != null ? task.getProject().getName() : null);
 
         // Lấy tên của project từ đối tượng project và gán cho dto
         if (task.getProject() != null) {

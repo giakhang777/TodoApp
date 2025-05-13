@@ -9,33 +9,30 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.apptodo.R;
 import com.example.apptodo.adapter.TaskAdapter;
-import com.example.apptodo.api.TaskService;
 import com.example.apptodo.model.UserResponse;
 import com.example.apptodo.model.response.TaskResponse;
-import com.example.apptodo.retrofit.RetrofitClient;
 import com.example.apptodo.viewmodel.SharedUserViewModel;
+import com.example.apptodo.viewmodel.TaskViewModel;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import java.util.Collections;
 
 public class ExpiredTasksFragment extends Fragment implements TaskAdapter.OnTaskStatusUpdatedListener {
     private RecyclerView recyclerView;
     private TextView emptyTasksText;
     private TaskAdapter taskAdapter;
     private List<TaskResponse> taskList = new ArrayList<>();
-    private TaskService taskService;
+    private TaskViewModel taskViewModel;
     private SharedUserViewModel sharedUserViewModel;
 
     @Override
@@ -50,13 +47,56 @@ public class ExpiredTasksFragment extends Fragment implements TaskAdapter.OnTask
         taskAdapter = new TaskAdapter(getContext(), taskList, null, this);
         recyclerView.setAdapter(taskAdapter);
 
-        // Sử dụng SharedUserViewModel để lấy userId
         sharedUserViewModel = new ViewModelProvider(requireActivity()).get(SharedUserViewModel.class);
+        taskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
+
+        taskViewModel.getTasks().observe(getViewLifecycleOwner(), new Observer<List<TaskResponse>>() {
+            @Override
+            public void onChanged(List<TaskResponse> tasks) {
+                taskList.clear();
+                if (tasks != null) {
+                    LocalDate today = LocalDate.now();
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                    for (TaskResponse task : tasks) {
+                        if (task.getDueDate() != null && !Boolean.TRUE.equals(task.getCompleted())) {
+                            try {
+                                LocalDate dueDate = LocalDate.parse(task.getDueDate(), formatter);
+                                if (dueDate.isBefore(today)) {
+                                    taskList.add(task);
+                                }
+                            } catch (Exception e) {
+                            }
+                        }
+                    }
+                }
+                taskAdapter.setTaskList(taskList);
+                updateEmptyTasksVisibility();
+            }
+        });
+
+        taskViewModel.getErrorMessage().observe(getViewLifecycleOwner(), new Observer<String>() {
+            @Override
+            public void onChanged(String errorMessage) {
+                if (errorMessage != null && !errorMessage.isEmpty() && taskList.isEmpty()) {
+                    Toast.makeText(getContext(), errorMessage, Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        taskViewModel.getTaskOperationResult().observe(getViewLifecycleOwner(), taskResponse -> {
+            if (taskResponse != null || taskResponse == null) {
+                if (sharedUserViewModel.getUser().getValue() != null && isAdded()) {
+                    int userId = sharedUserViewModel.getUser().getValue().getId();
+                    taskViewModel.loadAllTasks(userId);
+                }
+            }
+        });
+
+
         sharedUserViewModel.getUser().observe(getViewLifecycleOwner(), userResponse -> {
             if (userResponse != null && userResponse.getId() != null && isAdded()) {
-                int userId = userResponse.getId(); // Lấy userId trực tiếp từ UserResponse
-                taskService = RetrofitClient.getTaskService();
-                loadExpiredTasks(userId);
+                int userId = userResponse.getId();
+                taskViewModel.loadAllTasks(userId);
             } else {
                 Toast.makeText(getContext(), "User not logged in or data unavailable", Toast.LENGTH_SHORT).show();
             }
@@ -65,57 +105,10 @@ public class ExpiredTasksFragment extends Fragment implements TaskAdapter.OnTask
         return view;
     }
 
-    private void loadExpiredTasks(int userId) {
-        if (taskService == null) {
-            return;
-        }
-
-        taskService.getTasksByUser(userId).enqueue(new Callback<List<TaskResponse>>() {
-            @Override
-            public void onResponse(@NonNull Call<List<TaskResponse>> call, @NonNull Response<List<TaskResponse>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    taskList.clear();
-                    LocalDate today = LocalDate.now();
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-                    for (TaskResponse task : response.body()) {
-                        if (task.getDueDate() != null && !Boolean.TRUE.equals(task.getCompleted())) {
-                            try {
-                                LocalDate dueDate = LocalDate.parse(task.getDueDate(), formatter);
-                                if (dueDate.isBefore(today)) {
-                                    taskList.add(task);
-                                }
-                            } catch (Exception e) {
-                                // Log lỗi nếu cần: Log.e("ExpiredTasksFragment", "Error parsing date: " + e.getMessage());
-                            }
-                        }
-                    }
-                    taskAdapter.setTaskList(taskList);
-                    updateEmptyTasksVisibility();
-                } else {
-                    taskList.clear();
-                    taskAdapter.setTaskList(taskList);
-                    updateEmptyTasksVisibility();
-                    Toast.makeText(getContext(), "Unable to load expired tasks: " + response.message(), Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<List<TaskResponse>> call, @NonNull Throwable t) {
-                taskList.clear();
-                taskAdapter.setTaskList(taskList);
-                updateEmptyTasksVisibility();
-                Toast.makeText(getContext(), "Error loading expired tasks: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
     @Override
-    public void onTaskStatusUpdated() {
-        // Làm mới danh sách khi trạng thái task thay đổi
+    public void onTaskStatusUpdated(int taskId, boolean completed) {
         if (sharedUserViewModel.getUser().getValue() != null && isAdded()) {
-            int userId = sharedUserViewModel.getUser().getValue().getId(); // Lấy userId trực tiếp từ UserResponse
-            loadExpiredTasks(userId);
+            taskViewModel.changeTaskStatus(taskId, completed);
         }
     }
 
@@ -128,6 +121,16 @@ public class ExpiredTasksFragment extends Fragment implements TaskAdapter.OnTask
                 emptyTasksText.setVisibility(View.GONE);
                 recyclerView.setVisibility(View.VISIBLE);
             }
+        }
+    }
+
+    private int getPriorityValue(String priority) {
+        if (priority == null) return 3;
+        switch (priority.toLowerCase()) {
+            case "high": return 0;
+            case "medium": return 1;
+            case "low": return 2;
+            default: return 3;
         }
     }
 

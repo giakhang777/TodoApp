@@ -1,70 +1,80 @@
 package com.example.apptodo.adapter;
 
-import android.content.res.ColorStateList; // Import cần thiết
+import android.content.res.ColorStateList;
+import android.util.Log; // Import Log
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CheckBox;
 import android.widget.RadioButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat; // Import cần thiết
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.apptodo.R;
 import com.example.apptodo.model.response.SubTaskResponse;
 
 import java.util.List;
+import java.util.ArrayList; // Import ArrayList
 
 public class SubTaskAdapter extends RecyclerView.Adapter<SubTaskAdapter.SubTaskViewHolder> {
 
+    private static final String TAG = "SubTaskAdapter"; // Logging Tag
+
     private List<SubTaskResponse> subTaskList;
     private OnSubTaskCheckedChangeListener listener;
-    private int parentTaskButtonColor; // Thêm biến để lưu màu của statusButton cha
+    private int parentTaskButtonColor;
 
     public interface OnSubTaskCheckedChangeListener {
         void onSubTaskCheckedChanged(SubTaskResponse subTask, boolean isChecked);
     }
 
-    // Cập nhật constructor để nhận thêm màu
     public SubTaskAdapter(List<SubTaskResponse> subTaskList, OnSubTaskCheckedChangeListener listener, int parentTaskButtonColor) {
-        this.subTaskList = subTaskList;
+        this.subTaskList = (subTaskList != null) ? subTaskList : new ArrayList<>(); // Handle null input
         this.listener = listener;
-        this.parentTaskButtonColor = parentTaskButtonColor; // Lưu màu
+        this.parentTaskButtonColor = parentTaskButtonColor;
+        Log.d(TAG, "SubTaskAdapter initialized. SubTask count: " + this.subTaskList.size());
     }
 
     @NonNull
     @Override
     public SubTaskViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_subtask, parent, false);
+        Log.d(TAG, "onCreateViewHolder called");
         return new SubTaskViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull SubTaskViewHolder holder, int position) {
         SubTaskResponse subTask = subTaskList.get(position);
-        holder.tvSubTaskTitle.setText(subTask.getTitle());
-        holder.rbSubTaskCompleted.setChecked(subTask.getCompleted() != null ? subTask.getCompleted() : false);
+        Log.d(TAG, "onBindViewHolder for subtask position: " + position + ", Title: " + subTask.getTitle());
 
-        // Đặt màu buttonTint cho RadioButton của subtask
+        holder.tvSubTaskTitle.setText(subTask.getTitle());
+
+        holder.rbSubTaskCompleted.setOnCheckedChangeListener(null); // Remove previous listener
+        holder.rbSubTaskCompleted.setChecked(subTask.getCompleted() != null && subTask.getCompleted());
         holder.rbSubTaskCompleted.setButtonTintList(ColorStateList.valueOf(parentTaskButtonColor));
 
-
         holder.rbSubTaskCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (holder.getAdapterPosition() == RecyclerView.NO_POSITION) return; // Check for valid position
+            SubTaskResponse currentSubTask = subTaskList.get(holder.getAdapterPosition()); // Get current subtask
+            Log.d(TAG, "SubTask ID " + currentSubTask.getId() + " onCheckedChanged, isChecked: " + isChecked);
             if (listener != null) {
-                listener.onSubTaskCheckedChanged(subTask, isChecked);
+                listener.onSubTaskCheckedChanged(currentSubTask, isChecked);
             }
         });
     }
 
     @Override
     public int getItemCount() {
-        return subTaskList != null ? subTaskList.size() : 0;
+        int count = subTaskList != null ? subTaskList.size() : 0;
+        // Log.d(TAG, "getItemCount called. Returning: " + count); // Can be noisy
+        return count;
     }
 
-    public void setSubTaskList(List<SubTaskResponse> subTaskList) {
-        this.subTaskList = subTaskList;
+    public void setSubTaskList(List<SubTaskResponse> newSubTaskList) {
+        this.subTaskList = (newSubTaskList != null) ? new ArrayList<>(newSubTaskList) : new ArrayList<>();
+        Log.d(TAG, "setSubTaskList called. New subtask count: " + this.subTaskList.size());
         notifyDataSetChanged();
     }
 
