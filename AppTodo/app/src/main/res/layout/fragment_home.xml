@@ -132,6 +132,15 @@
         android:layout_height="170dp"
         android:layout_marginBottom="16dp"
         android:contentDescription="@string/close_nav" />
+    <TextView
+        android:id="@+id/tvNoTaskToday"
+        android:layout_width="match_parent"
+        android:layout_height="170dp"
+        android:text="No tasks for today"
+        android:gravity="center"
+        android:textSize="18sp"
+        android:textColor="@color/black"
+        android:visibility="gone"/>
 
     <!-- Task Group -->
     <LinearLayout
