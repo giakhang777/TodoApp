@@ -1,11 +1,13 @@
 package com.example.apptodo.activity;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -13,6 +15,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,6 +26,7 @@ import com.example.apptodo.R;
 import com.example.apptodo.adapter.InProgressViewPageAdapter;
 import com.example.apptodo.adapter.ProjectAdapter;
 import com.example.apptodo.api.TaskService;
+import com.example.apptodo.databinding.ActivityMainBinding;
 import com.example.apptodo.model.Progress;
 import com.example.apptodo.model.response.TaskResponse;
 import com.example.apptodo.retrofit.RetrofitClient;
@@ -41,9 +45,9 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class HomeFragment extends Fragment {
-
+    private ActivityMainBinding binding;
     private RecyclerView rvProject;
-    private TextView countGroup, countProgress, profileNameTextView;
+    private TextView countGroup, countProgress, profileNameTextView,tvNoTaskToday;
     private ProjectAdapter ProjectAdapter;
     private List<Progress> listProject;
     private ViewPager viewPager;
@@ -51,6 +55,8 @@ public class HomeFragment extends Fragment {
     private ImageView profileImageView;
     private Handler handler = new Handler();
     private SharedUserViewModel userViewModel;
+    private Button btnViewTask;
+
 
     private final Runnable runnable = new Runnable() {
         @Override
@@ -62,24 +68,31 @@ public class HomeFragment extends Fragment {
         }
     };
 
-    public HomeFragment() {
-        // Required empty public constructor
-    }
+    public HomeFragment() {}
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_home, container, false);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
+        tvNoTaskToday = view.findViewById(R.id.tvNoTaskToday);
+        tvNoTaskToday.setVisibility(View.GONE);
         userViewModel = new ViewModelProvider(requireActivity()).get(SharedUserViewModel.class);
         profileNameTextView = view.findViewById(R.id.profileNameTextView);
         profileImageView = view.findViewById(R.id.imageUserHome);
-
+        btnViewTask = view.findViewById(R.id.btnViewTask);
+        btnViewTask.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FragmentTransaction transaction = requireActivity().getSupportFragmentManager().beginTransaction();
+                transaction.replace(R.id.frame_layout, new CalendarFragment());
+                transaction.addToBackStack(null);
+                transaction.commit();
+            }
+        });
         userViewModel.getUser().observe(getViewLifecycleOwner(), user -> {
             if (user != null) {
                 profileNameTextView.setText(user.getUsername());
@@ -110,7 +123,6 @@ public class HomeFragment extends Fragment {
         listProject.add(new Progress("quang cao","quang cao", "ngon", "lam viec 4","lam viec 1",  92));
         listProject.add(new Progress("quang cao","quang cao", "ngon", "lam viec 4","lam viec 1",  92));
 
-
         ProjectAdapter = new ProjectAdapter(getContext(), listProject);
         rvProject.setAdapter(ProjectAdapter);
         rvProject.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
@@ -121,7 +133,15 @@ public class HomeFragment extends Fragment {
         viewPager = view.findViewById(R.id.viewpage);
         countProgress = view.findViewById(R.id.countProgress);
         listInProgress = new ArrayList<>();
-        getListTaskFromApi();
+
+        userViewModel.getUser().observe(getViewLifecycleOwner(), user -> {
+            if (user != null && user.getId() != null) {
+                getListTaskFromApi(user.getId());
+            } else {
+                Toast.makeText(getContext(), "User not found", Toast.LENGTH_SHORT).show();
+            }
+        });
+
         handler.postDelayed(runnable, 3000);
 
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
@@ -134,45 +154,41 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    private void getListTaskFromApi() {
-//        String today = LocalDate.now().toString();
-        String today = "2025-05-17";
-
+    private void getListTaskFromApi(Integer userId) {
+        String today = LocalDate.now().toString();
         TaskService taskService = RetrofitClient.getRetrofit().create(TaskService.class);
 
-        taskService.getTasksByDate(today).enqueue(new Callback<List<TaskResponse>>() {
+        taskService.getTasksByDate(today, userId).enqueue(new Callback<List<TaskResponse>>() {
             @Override
             public void onResponse(Call<List<TaskResponse>> call, Response<List<TaskResponse>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<TaskResponse> tasks = response.body();
                     listInProgress.clear();
 
-                    // Lọc task chưa hoàn thành
-                    List<TaskResponse> unfinishedTasks = new ArrayList<>();
                     for (TaskResponse task : tasks) {
-                        if (!task.getCompleted()) { // Giả sử phương thức isCompleted() trả về trạng thái
-                            unfinishedTasks.add(task);
+                        if (!task.getCompleted()) {
+                            listInProgress.add(new Progress(
+                                    task.getTitle(),
+                                    task.getProject(),
+                                    task.getLabel(),
+                                    task.getPriority(),
+                                    task.getDescription(),
+                                    60
+                            ));
                         }
                     }
-
-                    for (int i = 0; i < unfinishedTasks.size(); i++) {
-                        TaskResponse task = unfinishedTasks.get(i);
-                        listInProgress.add(new Progress(
-                                task.getTitle(),
-                                task.getProject(),
-                                task.getLabel(),
-                                task.getPriority(),
-                                task.getDescription(),
-                                60
-                        ));
+                    if (listInProgress.isEmpty()) {
+                        tvNoTaskToday.setVisibility(View.VISIBLE);
+                        viewPager.setVisibility(View.GONE);
+                    } else {
+                        tvNoTaskToday.setVisibility(View.GONE);
+                        viewPager.setVisibility(View.VISIBLE);
                     }
-
                     InProgressViewPageAdapter adapter = new InProgressViewPageAdapter(listInProgress);
                     viewPager.setAdapter(adapter);
                     countProgress.setText(String.valueOf(listInProgress.size()));
-                } else {
-                    Toast.makeText(getContext(), "Không có task hôm nay", Toast.LENGTH_SHORT).show();
                 }
+
             }
 
             @Override
@@ -181,7 +197,6 @@ public class HomeFragment extends Fragment {
             }
         });
     }
-
 
     private void setPieChart(View view) {
         PieChart pieChart = view.findViewById(R.id.chart);

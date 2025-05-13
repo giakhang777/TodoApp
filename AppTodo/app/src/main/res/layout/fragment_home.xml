@@ -1,178 +1,182 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/filter_inactive_bg"
+    android:orientation="vertical"
+    android:padding="16dp"
     tools:context=".activity.HomeFragment">
 
+    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
 
+        <ImageView
+            android:id="@+id/imageUserHome"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/defaulter_user"
+            android:scaleType="centerCrop"
+            android:background="@color/filter_inactive_bg"/>
 
-        <!-- Header -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="6"
+            android:orientation="vertical"
+            android:paddingStart="10dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hello!"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/profileNameTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Livia Vaccaro"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Card with Pie Chart -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp">
+
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="120dp"
+            android:background="#4280EF"
+            android:padding="16dp"
             android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="16dp">
-
-            <ImageView
-                android:id="@+id/imageUserHome"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:src="@drawable/defaulter_user"
-                android:scaleType="centerCrop"
-                android:background="@color/filter_inactive_bg"/>
+            android:gravity="center_vertical">
 
             <LinearLayout
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="6"
-                android:orientation="vertical"
-                android:paddingStart="10dp">
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Hello!"
-                    android:textSize="14sp" />
+                    android:text="Your today's task almost done!"
+                    android:textColor="@color/white"
+                    android:textSize="16sp" />
 
-                <TextView
-                    android:id="@+id/profileNameTextView"
+                <Button
+                    android:id="@+id/btnViewTask"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Livia Vaccaro"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/black"/>
+                    android:layout_marginTop="10dp"
+                    android:backgroundTint="@color/white"
+                    android:minHeight="48dp"
+                    android:text="View task"
+                    android:textColor="#4280EF" />
             </LinearLayout>
+
+            <com.github.mikephil.charting.charts.PieChart
+                android:id="@+id/chart"
+                android:layout_width="0dp"
+                android:layout_height="80dp"
+                android:layout_weight="1"/>
         </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
-        <!-- Card with Pie Chart -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
+    <!-- In Progress -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:id="@+id/textView6"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp">
+            android:layout_marginEnd="8dp"
+            android:text="In Progress"
+            android:textSize="20sp"
+            android:textStyle="bold" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="120dp"
-                android:background="#4280EF"
-                android:padding="16dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Your today's task almost done!"
-                        android:textColor="@color/white"
-                        android:textSize="16sp" />
-
-                    <Button
-                        android:id="@+id/button"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:backgroundTint="@color/white"
-                        android:minHeight="48dp"
-                        android:text="View task"
-                        android:textColor="#4280EF" />
-                </LinearLayout>
-
-                <com.github.mikephil.charting.charts.PieChart
-                    android:id="@+id/chart"
-                    android:layout_width="0dp"
-                    android:layout_height="80dp"
-                    android:layout_weight="1"/>
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-        <!-- In Progress -->
-        <LinearLayout
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/countProgress"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="8dp">
-
-            <TextView
-                android:id="@+id/textView6"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:text="In Progress"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/countProgress"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/custom_tv_count"
-                android:textColor="@color/filter_inactive_text"
-                android:text="1"
-                android:textSize="14sp"
-                android:paddingHorizontal="6dp"
-                android:gravity="center"
-                android:textStyle="bold"/>
-        </LinearLayout>
-
-        <androidx.viewpager.widget.ViewPager
-            android:id="@+id/viewpage"
-            android:layout_width="match_parent"
-            android:layout_height="170dp"
-            android:layout_marginBottom="16dp"
-            android:contentDescription="@string/close_nav" />
-
-        <!-- Task Group -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="8dp">
-
-            <TextView
-                android:id="@+id/textView7"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:text="Project"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/countGroup"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/custom_tv_count"
-                android:textColor="@color/filter_inactive_text"
-                android:text="42"
-                android:textSize="14sp"
-                android:paddingHorizontal="6dp"
-                android:gravity="center"
-                android:textStyle="bold"/>
-        </LinearLayout>
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvTaskGroup"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingBottom="120dp"/>
-<!--            android:nestedScrollingEnabled="false"/>-->
+            android:background="@drawable/custom_tv_count"
+            android:textColor="@color/filter_inactive_text"
+            android:text="1"
+            android:textSize="14sp"
+            android:paddingHorizontal="6dp"
+            android:gravity="center"
+            android:textStyle="bold"/>
     </LinearLayout>
 
-</ScrollView>
+    <androidx.viewpager.widget.ViewPager
+        android:id="@+id/viewpage"
+        android:layout_width="match_parent"
+        android:layout_height="170dp"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="@string/close_nav" />
+    <!-- Placeholder for tasks list -->
+    <TextView
+        android:id="@+id/tvNoTaskToday"
+        android:layout_width="match_parent"
+        android:layout_height="170dp"
+        android:text="No tasks for today"
+        android:gravity="center"
+        android:textSize="18sp"
+        android:textColor="@color/black"
+        android:visibility="gone"/>
+    <!-- Task Group -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:id="@+id/textView7"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="Project"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/countGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/custom_tv_count"
+            android:textColor="@color/filter_inactive_text"
+            android:text="42"
+            android:textSize="14sp"
+            android:paddingHorizontal="6dp"
+            android:gravity="center"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <!-- RecyclerView scrolls -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvTaskGroup"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="always" />
+
+</LinearLayout>

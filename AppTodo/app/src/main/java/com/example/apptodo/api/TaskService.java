@@ -35,6 +35,6 @@ public interface TaskService {
     @PATCH("/api/task/{taskId}/status")
     Call<TaskResponse> changeTaskStatus(@Path("taskId") int taskId, @Body Boolean completed);
 
-    @GET("/api/task/date/{date}")
-    Call<List<TaskResponse>> getTasksByDate(@Path("date") String date);
+    @GET("/api/task/date/{date}/{userId}")
+    Call<List<TaskResponse>> getTasksByDate(@Path("date") String date, @Path("userId") int userId);
 }
