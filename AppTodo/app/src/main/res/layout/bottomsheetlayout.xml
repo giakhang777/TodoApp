@@ -8,11 +8,11 @@
     android:background="@android:color/white">
 
     <LinearLayout
+        android:id="@+id/mainLinearLayout"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <!-- Close Button -->
         <ImageButton
             android:id="@+id/closeButton"
             android:layout_width="40dp"
@@ -23,44 +23,31 @@
             android:src="@drawable/baseline_close_24"
             tools:ignore="TouchTargetSizeCheck" />
 
-        <!-- Task Title -->
-        <com.google.android.material.textfield.TextInputLayout
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/taskTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/edit_text_background"
+            android:hint="Task Title"
+            android:padding="12dp"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            tools:ignore="TouchTargetSizeCheck" />
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/taskTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/edit_text_background"
-                android:hint="Task Title"
-                android:padding="12dp"
-                android:textColor="@android:color/black"
-                android:textSize="16sp"
-                tools:ignore="TouchTargetSizeCheck" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Description -->
-        <com.google.android.material.textfield.TextInputLayout
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/taskDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/edit_text_background"
+            android:hint="Task Description"
+            android:inputType="textMultiLine"
+            android:padding="12dp"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            tools:ignore="TouchTargetSizeCheck" />
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/taskDescription"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/edit_text_background"
-                android:hint="Task Description"
-                android:inputType="textMultiLine"
-                android:padding="12dp"
-                android:textColor="@android:color/black"
-                android:textSize="16sp"
-                tools:ignore="TouchTargetSizeCheck" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Priority -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -79,7 +66,6 @@
             android:minHeight="48dp"
             android:padding="8dp" />
 
-        <!-- Scheduled Date -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -100,7 +86,6 @@
             android:textColor="@android:color/black"
             android:layout_marginBottom="12dp" />
 
-        <!-- Reminder Time -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -121,7 +106,6 @@
             android:textColor="@android:color/black"
             android:layout_marginBottom="12dp" />
 
-        <!-- Project -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -140,7 +124,6 @@
             android:minHeight="48dp"
             android:padding="8dp" />
 
-        <!-- Label -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -159,12 +142,20 @@
             android:minHeight="48dp"
             android:padding="8dp" />
 
-        <!-- Save Button -->
         <Button
             android:id="@+id/saveButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
             android:text="Save"
+            android:textColor="@android:color/white"
+            android:background="@drawable/edit_text_background"
+            android:padding="14dp" />
+        <Button
+            android:id="@+id/deleteButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Delete"
             android:textColor="@android:color/white"
             android:background="@drawable/edit_text_background"
             android:padding="14dp" />

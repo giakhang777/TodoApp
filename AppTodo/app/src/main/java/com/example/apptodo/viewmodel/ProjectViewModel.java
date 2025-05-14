@@ -19,11 +19,16 @@ public class ProjectViewModel extends ViewModel {
 
     private final MutableLiveData<List<ProjectResponse>> projectList = new MutableLiveData<>(new ArrayList<>());
 
+    private final MutableLiveData<ProjectResponse> singleProjectLiveData = new MutableLiveData<>();
+
     public LiveData<List<ProjectResponse>> getProjectList() {
         return projectList;
     }
 
-    // Lấy danh sách project từ API
+    public LiveData<ProjectResponse> getSingleProject() {
+        return singleProjectLiveData;
+    }
+
     public void fetchProjects(int userId) {
         ProjectService service = RetrofitClient.getProjectService();
         service.getAllProjects(userId).enqueue(new Callback<List<ProjectResponse>>() {
@@ -36,24 +41,37 @@ public class ProjectViewModel extends ViewModel {
 
             @Override
             public void onFailure(Call<List<ProjectResponse>> call, Throwable t) {
-                // Xử lý lỗi nếu cần
             }
         });
     }
 
-    // Thêm project mới vào danh sách
     public void addProject(ProjectResponse project) {
         List<ProjectResponse> current = projectList.getValue();
         if (current != null) {
             current.add(project);
-            projectList.setValue(new ArrayList<>(current));  // Cập nhật lại LiveData
+            projectList.setValue(new ArrayList<>(current));
         }
     }
+
     public void removeProject(ProjectResponse project) {
         List<ProjectResponse> currentProjects = projectList.getValue();
         if (currentProjects != null) {
             currentProjects.remove(project);
-            projectList.setValue(currentProjects);  // Cập nhật danh sách
+            projectList.setValue(currentProjects);
         }
+    }
+
+    public void getProjectById(int projectId) {
+        List<ProjectResponse> currentProjects = projectList.getValue();
+        ProjectResponse foundProject = null;
+        if (currentProjects != null) {
+            for (ProjectResponse project : currentProjects) {
+                if (project.getId() == projectId) {
+                    foundProject = project;
+                    break;
+                }
+            }
+        }
+        singleProjectLiveData.setValue(foundProject);
     }
 }

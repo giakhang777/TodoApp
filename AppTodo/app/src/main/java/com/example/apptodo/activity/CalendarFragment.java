@@ -9,6 +9,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -17,11 +18,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.apptodo.R;
 import com.example.apptodo.adapter.DateAdapter;
 import com.example.apptodo.adapter.TaskAdapter;
-import com.example.apptodo.api.TaskService;
 import com.example.apptodo.model.DateItem;
 import com.example.apptodo.model.response.TaskResponse;
-import com.example.apptodo.retrofit.RetrofitClient;
 import com.example.apptodo.viewmodel.SharedUserViewModel;
+import com.example.apptodo.viewmodel.TaskViewModel;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -30,23 +30,19 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Comparator;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
-public class CalendarFragment extends Fragment implements DateAdapter.OnDateClickListener {
-
+public class CalendarFragment extends Fragment implements DateAdapter.OnDateClickListener, TaskAdapter.OnTaskStatusUpdatedListener {
     private RecyclerView datesRecyclerView, tasksRecyclerView;
     private TextView dateDisplay, emptyTasksText;
     private DateAdapter dateAdapter;
     private TaskAdapter taskAdapter;
-    private List<DateItem> dateItems = new ArrayList<>();
     private List<TaskResponse> taskList = new ArrayList<>();
-    private TaskService taskService;
+    private TaskViewModel taskViewModel;
     private SharedUserViewModel sharedUserViewModel;
     private Integer userId;
-
+    private Date selectedDateForTasks;
+    private List<DateItem> dateItems = new ArrayList<>();
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -57,32 +53,78 @@ public class CalendarFragment extends Fragment implements DateAdapter.OnDateClic
         dateDisplay = view.findViewById(R.id.dateDisplay);
         emptyTasksText = view.findViewById(R.id.emptyTasksText);
 
-        taskService = RetrofitClient.getTaskService();
-
-        taskAdapter = new TaskAdapter(getContext(), taskList);
+        taskAdapter = new TaskAdapter(getContext(), new ArrayList<>(), (TaskAdapter.OnItemClickListener) requireActivity(), this);
         tasksRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         tasksRecyclerView.setAdapter(taskAdapter);
 
         dateDisplay.setOnClickListener(v -> showDatePickerDialog());
 
-        // Lấy userId từ SharedUserViewModel
+        return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         sharedUserViewModel = new ViewModelProvider(requireActivity()).get(SharedUserViewModel.class);
-        sharedUserViewModel.getUser().observe(getViewLifecycleOwner(), userResponse -> {
-            if (userResponse != null && userResponse.getId() != null && isAdded()) {
-                userId = userResponse.getId();
-                setupDateList();
-            } else {
-                Toast.makeText(getContext(), "User not logged in or data unavailable", Toast.LENGTH_SHORT).show();
+        taskViewModel = new ViewModelProvider(requireActivity()).get(TaskViewModel.class);
+
+        taskViewModel.getTasks().observe(getViewLifecycleOwner(), receivedTasks -> {
+            List<TaskResponse> filteredAndSortedTasks = new ArrayList<>();
+            if (receivedTasks != null) {
+                for (TaskResponse task : receivedTasks) {
+                    if (Boolean.FALSE.equals(task.getCompleted())) {
+                        filteredAndSortedTasks.add(task);
+                    }
+                }
+                Collections.sort(filteredAndSortedTasks, (t1, t2) -> getPriorityValue(t1.getPriority()) - getPriorityValue(t2.getPriority()));
+            }
+
+            this.taskList.clear();
+            this.taskList.addAll(filteredAndSortedTasks);
+            taskAdapter.setTaskList(this.taskList);
+            updateEmptyTasksVisibility();
+        });
+
+        taskViewModel.getErrorMessage().observe(getViewLifecycleOwner(), errorMessage -> {
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                if (this.taskList.isEmpty()) {
+                    Toast.makeText(getContext(), "Error loading tasks: " + errorMessage, Toast.LENGTH_LONG).show();
+                }
             }
         });
 
-        return view;
+        taskViewModel.getTaskOperationResult().observe(getViewLifecycleOwner(), taskResponse -> {
+            if (userId != null && selectedDateForTasks != null && isAdded()) {
+                loadTasksForDate(selectedDateForTasks);
+            }
+        });
+
+        sharedUserViewModel.getUser().observe(getViewLifecycleOwner(), userResponse -> {
+            if (userResponse != null && userResponse.getId() != null && isAdded()) {
+                this.userId = userResponse.getId();
+                setupDateList();
+
+                if (selectedDateForTasks == null) {
+                    selectedDateForTasks = Calendar.getInstance().getTime();
+                }
+                updateDateDisplay(selectedDateForTasks);
+                loadTasksForDate(selectedDateForTasks);
+            } else {
+                if (isAdded()) {
+                    Toast.makeText(getContext(), "User not logged in or data unavailable. Cannot load tasks.", Toast.LENGTH_LONG).show();
+                }
+                this.taskList.clear();
+                taskAdapter.setTaskList(this.taskList);
+                updateEmptyTasksVisibility();
+            }
+        });
     }
 
     private void setupDateList() {
         Calendar calendar = Calendar.getInstance();
         Date today = calendar.getTime();
 
+        dateItems.clear();
         for (int i = 0; i < 100; i++) {
             dateItems.add(new DateItem(calendar.getTime()));
             calendar.add(Calendar.DATE, 1);
@@ -95,138 +137,138 @@ public class CalendarFragment extends Fragment implements DateAdapter.OnDateClic
         dateAdapter = new DateAdapter(dateItems, this);
         datesRecyclerView.setAdapter(dateAdapter);
 
-        scrollToToday(today);
-        updateDateDisplay(today);
+        int todayPosition = -1;
+        SimpleDateFormat fullDateFormat = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+        String todayStr = fullDateFormat.format(today);
 
-        loadTasksForDate(today);
-    }
-
-    private void scrollToToday(Date today) {
         for (int i = 0; i < dateItems.size(); i++) {
-            if (dateItems.get(i).getFullDate().equals(new DateItem(today).getFullDate())) {
-                dateAdapter.updateSelectedPosition(i);
-                datesRecyclerView.scrollToPosition(i);
+            if (fullDateFormat.format(dateItems.get(i).getFullDate()).equals(todayStr)) {
+                todayPosition = i;
                 break;
             }
+        }
+
+        if (todayPosition != -1) {
+            dateAdapter.updateSelectedPosition(todayPosition);
+            datesRecyclerView.scrollToPosition(todayPosition);
+            if (selectedDateForTasks == null) {
+                selectedDateForTasks = dateItems.get(todayPosition).getFullDate();
+                updateDateDisplay(selectedDateForTasks);
+            }
+        } else if (!dateItems.isEmpty() && selectedDateForTasks == null) {
+            dateAdapter.updateSelectedPosition(0);
+            selectedDateForTasks = dateItems.get(0).getFullDate();
+            updateDateDisplay(selectedDateForTasks);
         }
     }
 
     private void showDatePickerDialog() {
         Calendar calendar = Calendar.getInstance();
-        long todayInMillis = calendar.getTimeInMillis();
+        if (selectedDateForTasks != null) {
+            calendar.setTime(selectedDateForTasks);
+        }
+        long minDateMillis = Calendar.getInstance().getTimeInMillis() - 1000;
 
         DatePickerDialog datePickerDialog = new DatePickerDialog(
                 requireContext(),
                 (view, year, monthOfYear, dayOfMonth) -> {
-                    Calendar selectedDate = Calendar.getInstance();
-                    selectedDate.set(year, monthOfYear, dayOfMonth);
-                    updateDateDisplay(selectedDate.getTime());
-                    scrollToSelectedDate(selectedDate.getTime());
-                    loadTasksForDate(selectedDate.getTime());
+                    Calendar selectedCal = Calendar.getInstance();
+                    selectedCal.set(year, monthOfYear, dayOfMonth);
+                    Date newSelectedDate = selectedCal.getTime();
+
+                    selectedDateForTasks = newSelectedDate;
+                    updateDateDisplay(selectedDateForTasks);
+                    scrollToSelectedDateInStrip(selectedDateForTasks);
+                    if (userId != null) {
+                        loadTasksForDate(selectedDateForTasks);
+                    }
                 },
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
                 calendar.get(Calendar.DAY_OF_MONTH)
         );
 
-        datePickerDialog.getDatePicker().setMinDate(todayInMillis);
+        datePickerDialog.getDatePicker().setMinDate(minDateMillis);
         datePickerDialog.show();
     }
 
-    private void scrollToSelectedDate(Date selectedDate) {
-        Calendar selectedCalendar = Calendar.getInstance();
-        selectedCalendar.setTime(selectedDate);
+    private void scrollToSelectedDateInStrip(Date dateToScrollTo) {
+        SimpleDateFormat fullDateFormat = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+        String dateToScrollToStr = fullDateFormat.format(dateToScrollTo);
+        int targetPosition = -1;
 
         for (int i = 0; i < dateItems.size(); i++) {
-            Calendar itemCalendar = Calendar.getInstance();
-            itemCalendar.setTime(dateItems.get(i).getFullDate());
-
-            if (selectedCalendar.get(Calendar.YEAR) == itemCalendar.get(Calendar.YEAR) &&
-                    selectedCalendar.get(Calendar.MONTH) == itemCalendar.get(Calendar.MONTH) &&
-                    selectedCalendar.get(Calendar.DAY_OF_MONTH) == itemCalendar.get(Calendar.DAY_OF_MONTH)) {
-
-                dateAdapter.updateSelectedPosition(i);
-                datesRecyclerView.smoothScrollToPosition(i);
+            if (fullDateFormat.format(dateItems.get(i).getFullDate()).equals(dateToScrollToStr)) {
+                targetPosition = i;
                 break;
             }
+        }
+
+        if (targetPosition != -1) {
+            dateAdapter.updateSelectedPosition(targetPosition);
+            datesRecyclerView.smoothScrollToPosition(targetPosition);
+        } else {
         }
     }
 
     private void updateDateDisplay(Date date) {
+        if (date == null) {
+            return;
+        }
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(date);
 
-        String monthName = getMonthName(calendar.get(Calendar.MONTH));
+        String monthName = new SimpleDateFormat("MMMM", Locale.getDefault()).format(calendar.getTime());
         int year = calendar.get(Calendar.YEAR);
         String dateText = monthName + " " + year;
 
         dateDisplay.setText(dateText);
     }
 
-    private String getMonthName(int month) {
-        String[] months = {
-                "January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December"
-        };
-        return months[month];
-    }
 
     @Override
     public void onDateClick(DateItem dateItem, int position) {
         dateAdapter.updateSelectedPosition(position);
-        updateDateDisplay(dateItem.getFullDate());
-        loadTasksForDate(dateItem.getFullDate());
+        selectedDateForTasks = dateItem.getFullDate();
+
+        updateDateDisplay(selectedDateForTasks);
+        if (userId != null) {
+            loadTasksForDate(selectedDateForTasks);
+        } else {
+            Toast.makeText(getContext(), "User ID not available.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void loadTasksForDate(Date date) {
+        if (date == null) {
+            return;
+        }
         if (userId == null) {
-            Toast.makeText(getContext(), "User ID not available", Toast.LENGTH_SHORT).show();
+            if (isAdded()) Toast.makeText(getContext(), "User ID not available. Cannot load tasks.", Toast.LENGTH_SHORT).show();
+            this.taskList.clear();
+            taskAdapter.setTaskList(this.taskList);
+            updateEmptyTasksVisibility();
             return;
         }
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         String formattedDate = sdf.format(date);
+        taskViewModel.loadTasksByDate(formattedDate, userId);
+    }
 
-        taskService.getTasksByDate(formattedDate, userId).enqueue(new Callback<List<TaskResponse>>() {
-            @Override
-            public void onResponse(Call<List<TaskResponse>> call, Response<List<TaskResponse>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    taskList.clear();
-                    for (TaskResponse task : response.body()) {
-                        if (Boolean.FALSE.equals(task.getCompleted())) {
-                            taskList.add(task);
-                        }
-                    }
-
-                    Collections.sort(taskList, (t1, t2) -> getPriorityValue(t1.getPriority()) - getPriorityValue(t2.getPriority()));
-
-                    taskAdapter.setTaskList(taskList);
-                    updateEmptyTasksVisibility();
-                } else {
-                    taskList.clear();
-                    taskAdapter.setTaskList(taskList);
-                    updateEmptyTasksVisibility();
-                    Toast.makeText(getContext(), "No tasks found for selected date", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onFailure(Call<List<TaskResponse>> call, Throwable t) {
-                taskList.clear();
-                taskAdapter.setTaskList(taskList);
-                updateEmptyTasksVisibility();
-                Toast.makeText(getContext(), "Failed to load tasks: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+    @Override
+    public void onTaskStatusUpdated(int taskId, boolean completed) {
+        if (sharedUserViewModel.getUser().getValue() != null && isAdded() && userId != null) {
+            taskViewModel.changeTaskStatus(taskId, completed);
+        } else {
+        }
     }
 
     private void updateEmptyTasksVisibility() {
-        if (taskList.isEmpty()) {
-            emptyTasksText.setVisibility(View.VISIBLE);
-            tasksRecyclerView.setVisibility(View.GONE);
-        } else {
-            emptyTasksText.setVisibility(View.GONE);
-            tasksRecyclerView.setVisibility(View.VISIBLE);
+        boolean isEmpty = this.taskList.isEmpty();
+        if (emptyTasksText != null && tasksRecyclerView != null) {
+            emptyTasksText.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+            tasksRecyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
         }
     }
 

@@ -7,7 +7,6 @@ public class TaskRequest {
     private String title;
     private String priority;
 
-    @SerializedName("due_date")
     private String dueDate;
 
     private String description;

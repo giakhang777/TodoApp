@@ -9,31 +9,28 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.apptodo.R;
 import com.example.apptodo.adapter.TaskAdapter;
-import com.example.apptodo.api.TaskService;
-import com.example.apptodo.model.UserResponse;
 import com.example.apptodo.model.response.TaskResponse;
-import com.example.apptodo.retrofit.RetrofitClient;
 import com.example.apptodo.viewmodel.SharedUserViewModel;
+import com.example.apptodo.viewmodel.TaskViewModel;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class CompletedTasksFragment extends Fragment implements TaskAdapter.OnTaskStatusUpdatedListener {
     private RecyclerView recyclerView;
     private TextView emptyTasksText;
     private TaskAdapter taskAdapter;
     private List<TaskResponse> taskList = new ArrayList<>();
-    private TaskService taskService;
+    private TaskViewModel taskViewModel;
     private SharedUserViewModel sharedUserViewModel;
 
     @Override
@@ -45,16 +42,62 @@ public class CompletedTasksFragment extends Fragment implements TaskAdapter.OnTa
             Toast.makeText(getContext(), "Error: emptyTasksText not found in layout", Toast.LENGTH_SHORT).show();
         }
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        taskAdapter = new TaskAdapter(getContext(), taskList, null, this);
+        taskAdapter = new TaskAdapter(getContext(), taskList, null, this); // Dựa trên mã bạn gửi trước đó, chỉ truyền status listener
         recyclerView.setAdapter(taskAdapter);
 
-        // Sử dụng SharedUserViewModel để lấy userId
         sharedUserViewModel = new ViewModelProvider(requireActivity()).get(SharedUserViewModel.class);
+        taskViewModel = new ViewModelProvider(requireActivity()).get(TaskViewModel.class);
+
+        taskViewModel.getTasks().observe(getViewLifecycleOwner(), new Observer<List<TaskResponse>>() {
+            @Override
+            public void onChanged(List<TaskResponse> tasks) {
+                taskList.clear();
+                List<TaskResponse> completedTasks = new ArrayList<>(); // Danh sách tạm chứa task đã hoàn thành
+                if (tasks != null) {
+                    for (TaskResponse task : tasks) {
+                        if (Boolean.TRUE.equals(task.getCompleted())) {
+                            completedTasks.add(task);
+                        }
+                    }
+                }
+
+                Collections.sort(completedTasks, new Comparator<TaskResponse>() {
+                    @Override
+                    public int compare(TaskResponse t1, TaskResponse t2) {
+                        if (t1.getUpdatedAt() == null && t2.getUpdatedAt() == null) return 0;
+                        if (t1.getUpdatedAt() == null) return 1; // Nulls last
+                        if (t2.getUpdatedAt() == null) return -1; // Nulls last
+                        return t2.getUpdatedAt().compareTo(t1.getUpdatedAt()); // Giảm dần
+                    }
+                });
+
+
+                taskList.addAll(completedTasks);
+                taskAdapter.setTaskList(taskList);
+                updateEmptyTasksVisibility();
+            }
+        });
+
+        taskViewModel.getErrorMessage().observe(getViewLifecycleOwner(), new Observer<String>() {
+            @Override
+            public void onChanged(String errorMessage) {
+                if (errorMessage != null && !errorMessage.isEmpty() && taskList.isEmpty()) {
+                    Toast.makeText(getContext(), errorMessage, Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        taskViewModel.getTaskOperationResult().observe(getViewLifecycleOwner(), taskResponse -> {
+            if (sharedUserViewModel.getUser().getValue() != null && isAdded()) {
+                int userId = sharedUserViewModel.getUser().getValue().getId();
+                taskViewModel.loadAllTasks(userId); // Kích hoạt tải lại dữ liệu
+            }
+        });
+
         sharedUserViewModel.getUser().observe(getViewLifecycleOwner(), userResponse -> {
             if (userResponse != null && userResponse.getId() != null && isAdded()) {
-                int userId = userResponse.getId(); // Lấy userId trực tiếp từ UserResponse
-                taskService = RetrofitClient.getTaskService();
-                loadCompletedTasks(userId);
+                int userId = userResponse.getId();
+                taskViewModel.loadAllTasks(userId);
             } else {
                 Toast.makeText(getContext(), "User not logged in or data unavailable", Toast.LENGTH_SHORT).show();
             }
@@ -63,48 +106,10 @@ public class CompletedTasksFragment extends Fragment implements TaskAdapter.OnTa
         return view;
     }
 
-    private void loadCompletedTasks(int userId) {
-        if (taskService == null) {
-            return;
-        }
-
-        taskService.getTasksByUser(userId).enqueue(new Callback<List<TaskResponse>>() {
-            @Override
-            public void onResponse(@NonNull Call<List<TaskResponse>> call, @NonNull Response<List<TaskResponse>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    taskList.clear();
-
-                    for (TaskResponse task : response.body()) {
-                        if (Boolean.TRUE.equals(task.getCompleted())) {
-                            taskList.add(task);
-                        }
-                    }
-                    taskAdapter.setTaskList(taskList);
-                    updateEmptyTasksVisibility();
-                } else {
-                    taskList.clear();
-                    taskAdapter.setTaskList(taskList);
-                    updateEmptyTasksVisibility();
-                    Toast.makeText(getContext(), "Unable to load completed tasks: " + response.message(), Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<List<TaskResponse>> call, @NonNull Throwable t) {
-                taskList.clear();
-                taskAdapter.setTaskList(taskList);
-                updateEmptyTasksVisibility();
-                Toast.makeText(getContext(), "Error loading completed tasks: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
     @Override
-    public void onTaskStatusUpdated() {
-        // Làm mới danh sách khi trạng thái task thay đổi
+    public void onTaskStatusUpdated(int taskId, boolean completed) {
         if (sharedUserViewModel.getUser().getValue() != null && isAdded()) {
-            int userId = sharedUserViewModel.getUser().getValue().getId(); // Lấy userId trực tiếp từ UserResponse
-            loadCompletedTasks(userId);
+            taskViewModel.changeTaskStatus(taskId, completed);
         }
     }
 
@@ -119,7 +124,6 @@ public class CompletedTasksFragment extends Fragment implements TaskAdapter.OnTa
             }
         }
     }
-
     @Override
     public void onDestroyView() {
         super.onDestroyView();

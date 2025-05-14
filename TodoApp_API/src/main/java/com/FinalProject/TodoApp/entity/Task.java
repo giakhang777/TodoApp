@@ -41,7 +41,4 @@ public class Task extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "label_id", nullable = true)
     private Label label;
-
-
-
 }

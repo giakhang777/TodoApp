@@ -39,12 +39,36 @@
                 android:layout_weight="2"
                 android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/nameProject"
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textSize="17sp"
-                    android:text="Project" />
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/nameProject"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="Project"
+                        android:layout_weight="1"
+                        android:textSize="17sp"
+                        android:maxLines="2"
+                        android:ellipsize="end"
+                        android:lines="2"/>
+
+                    <TextView
+                        android:id="@+id/nameLabel"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="start"
+                        android:layout_marginRight="15dp"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:text="Label"
+                        android:textSize="17sp"
+                        android:maxLines="2"
+                        android:ellipsize="end"
+                        android:lines="2"/>
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/nameTask"
@@ -86,12 +110,30 @@
                         android:layout_weight="1"
                         android:text="Time" />
                 </LinearLayout>
-                <TextView
+
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:textStyle="bold"
-                    android:text="Sub Task" />
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <ImageButton
+                        android:id="@+id/btnAddSubTask"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        app:srcCompat="@drawable/baseline_add_circle_outline_24" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:layout_marginLeft="6dp"
+                        android:layout_weight="5"
+                        android:text="Add Sub Task"
+                        android:gravity="center|start"
+                        android:lines="2"
+                        android:textStyle="bold" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -100,22 +142,12 @@
                 android:layout_weight="0"
                 android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/nameLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_weight="1"
-                    android:textSize="17sp"
-                    android:gravity="end"
-                    android:text="Label" />
-
                 <ImageButton
                     android:id="@+id/imageButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="end"
-                    android:layout_weight="1"
+                    android:layout_weight="8"
                     android:background="@color/white"
                     android:scaleType="fitEnd"
                     app:srcCompat="@drawable/baseline_expand_more_24" />

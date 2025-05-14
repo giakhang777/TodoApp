@@ -1,70 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/lavender"
-    tools:context="activity.TasksFragment">
+    android:background="@drawable/background_calender"
+    tools:context=".activity.TasksFragment">
 
-    <!-- TextView hiển thị chữ "Search" ở trên EditText -->
+    <LinearLayout
+        android:id="@+id/header_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
 
-    <!-- EditText cho thanh tìm kiếm với nền màu trắng và bo góc -->
+        <TextView
+            android:id="@+id/projectTitleTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Search"
+            android:textSize="28sp"
+            android:textColor="@color/lavender"
+            android:layout_gravity="center"
+            android:textStyle="bold"
+            android:layout_marginBottom="10dp"/>
 
-    <!-- Button Cancel nằm bên phải của EditText -->
+        <LinearLayout
+            android:id="@+id/search_bar_layout"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp">
+
+            <ImageView
+                android:id="@+id/imgSearch"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginEnd="8dp"
+                android:src="@drawable/search"
+                app:tint="@color/lavender" />
+
+            <EditText
+                android:id="@+id/editSearch"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:hint="Type here..."
+                android:inputType="text"
+                android:paddingStart="8dp"
+                android:textColor="@color/black"
+                android:textSize="16sp" />
+
+            <Button
+                android:id="@+id/btnCancelSearch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CANCEL"
+                android:backgroundTint="@color/lavender"
+                android:textColor="@android:color/white"
+                android:visibility="gone"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewTasks"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/header_layout"
+        android:padding="8dp"
+        android:visibility="visible"
+        android:paddingBottom="120dp"
+        tools:listitem="@layout/item_tasks" />
 
     <TextView
-        android:id="@+id/textSearch"
-        android:layout_width="160dp"
+        android:id="@+id/emptyTasksText"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:layout_marginBottom="16dp"
-        android:gravity="center"
-        android:text="Search"
-        android:textColor="@color/black"
-        android:textSize="35dp"
-        android:textStyle="bold" />
+        android:layout_centerInParent="true"
+        android:text="No tasks here yet!"
+        android:textSize="18sp"
+        android:visibility="gone" />
 
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <!-- EditText -->
-
-        <!-- Logo kính lúp -->
-
-        <EditText
-            android:id="@+id/editSearch"
-            android:layout_width="298dp"
-            android:layout_height="48dp"
-            android:layout_marginTop="80dp"
-            android:background="@drawable/edit_text_background"
-            android:hint="Type here..."
-            android:inputType="text"
-            android:paddingStart="40dp"
-            android:textColor="@color/black"
-            android:textSize="16sp" />
-
-        <ImageView
-            android:id="@+id/imgSearch"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_alignParentStart="true"
-            android:layout_alignParentTop="true"
-            android:layout_marginStart="4dp"
-            android:layout_marginTop="89dp"
-            android:src="@drawable/search" />
-    </RelativeLayout>
-
-    <Button
-        android:id="@+id/buttonCancel"
-        android:layout_width="107dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_marginLeft="300dp"
-        android:layout_marginTop="80dp"
-        android:layout_toEndOf="@id/editSearch"
-        android:background="@android:color/white"
-        android:text="Cancel"
-        android:textColor="@color/black" />
-
-</FrameLayout>
+</RelativeLayout>
