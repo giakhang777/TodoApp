@@ -2,6 +2,7 @@ package com.FinalProject.TodoApp.dto.request;
 
 import com.FinalProject.TodoApp.entity.Project;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.validation.constraints.Min;

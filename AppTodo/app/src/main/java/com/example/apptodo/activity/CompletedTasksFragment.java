@@ -16,12 +16,13 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.apptodo.R;
 import com.example.apptodo.adapter.TaskAdapter;
-import com.example.apptodo.model.UserResponse;
 import com.example.apptodo.model.response.TaskResponse;
 import com.example.apptodo.viewmodel.SharedUserViewModel;
 import com.example.apptodo.viewmodel.TaskViewModel;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class CompletedTasksFragment extends Fragment implements TaskAdapter.OnTaskStatusUpdatedListener {
@@ -41,23 +42,37 @@ public class CompletedTasksFragment extends Fragment implements TaskAdapter.OnTa
             Toast.makeText(getContext(), "Error: emptyTasksText not found in layout", Toast.LENGTH_SHORT).show();
         }
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        taskAdapter = new TaskAdapter(getContext(), taskList, null, this);
+        taskAdapter = new TaskAdapter(getContext(), taskList, null, this); // Dựa trên mã bạn gửi trước đó, chỉ truyền status listener
         recyclerView.setAdapter(taskAdapter);
 
         sharedUserViewModel = new ViewModelProvider(requireActivity()).get(SharedUserViewModel.class);
-        taskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
+        taskViewModel = new ViewModelProvider(requireActivity()).get(TaskViewModel.class);
 
         taskViewModel.getTasks().observe(getViewLifecycleOwner(), new Observer<List<TaskResponse>>() {
             @Override
             public void onChanged(List<TaskResponse> tasks) {
                 taskList.clear();
+                List<TaskResponse> completedTasks = new ArrayList<>(); // Danh sách tạm chứa task đã hoàn thành
                 if (tasks != null) {
                     for (TaskResponse task : tasks) {
                         if (Boolean.TRUE.equals(task.getCompleted())) {
-                            taskList.add(task);
+                            completedTasks.add(task);
                         }
                     }
                 }
+
+                Collections.sort(completedTasks, new Comparator<TaskResponse>() {
+                    @Override
+                    public int compare(TaskResponse t1, TaskResponse t2) {
+                        if (t1.getUpdatedAt() == null && t2.getUpdatedAt() == null) return 0;
+                        if (t1.getUpdatedAt() == null) return 1; // Nulls last
+                        if (t2.getUpdatedAt() == null) return -1; // Nulls last
+                        return t2.getUpdatedAt().compareTo(t1.getUpdatedAt()); // Giảm dần
+                    }
+                });
+
+
+                taskList.addAll(completedTasks);
                 taskAdapter.setTaskList(taskList);
                 updateEmptyTasksVisibility();
             }
@@ -73,11 +88,9 @@ public class CompletedTasksFragment extends Fragment implements TaskAdapter.OnTa
         });
 
         taskViewModel.getTaskOperationResult().observe(getViewLifecycleOwner(), taskResponse -> {
-            if (taskResponse != null || taskResponse == null) {
-                if (sharedUserViewModel.getUser().getValue() != null && isAdded()) {
-                    int userId = sharedUserViewModel.getUser().getValue().getId();
-                    taskViewModel.loadAllTasks(userId);
-                }
+            if (sharedUserViewModel.getUser().getValue() != null && isAdded()) {
+                int userId = sharedUserViewModel.getUser().getValue().getId();
+                taskViewModel.loadAllTasks(userId); // Kích hoạt tải lại dữ liệu
             }
         });
 
@@ -111,7 +124,6 @@ public class CompletedTasksFragment extends Fragment implements TaskAdapter.OnTa
             }
         }
     }
-
     @Override
     public void onDestroyView() {
         super.onDestroyView();

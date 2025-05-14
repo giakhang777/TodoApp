@@ -9,10 +9,13 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.Button;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -22,28 +25,25 @@ import com.bumptech.glide.Glide;
 import com.example.apptodo.R;
 import com.example.apptodo.adapter.InProgressViewPageAdapter;
 import com.example.apptodo.adapter.ProjectAdapter;
-import com.example.apptodo.api.ProjectService;
-import com.example.apptodo.api.TaskService;
 import com.example.apptodo.model.Progress;
+import com.example.apptodo.model.UserResponse;
 import com.example.apptodo.model.response.ProjectResponse;
 import com.example.apptodo.model.response.TaskResponse;
-import com.example.apptodo.retrofit.RetrofitClient;
 import com.example.apptodo.viewmodel.ProjectViewModel;
 import com.example.apptodo.viewmodel.SharedUserViewModel;
+import com.example.apptodo.viewmodel.TaskViewModel;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
 
-import java.time.LocalDate;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
-public class HomeFragment extends Fragment {
+public class HomeFragment extends Fragment implements ProjectAdapter.OnProjectClickListener {
 
     private RecyclerView rvProject;
     private TextView countGroup, countProgress, profileNameTextView, tvNoTaskToday;
@@ -54,6 +54,10 @@ public class HomeFragment extends Fragment {
     private ImageView profileImageView;
     private Handler handler = new Handler();
     private SharedUserViewModel userViewModel;
+    private TaskViewModel taskViewModel;
+    private ProjectViewModel projectViewModel;
+    private Button btnViewTask;
+    private PieChart pieChart;
 
     private final Runnable runnable = new Runnable() {
         @Override
@@ -65,9 +69,7 @@ public class HomeFragment extends Fragment {
         }
     };
 
-    public HomeFragment() {
-        // Required empty public constructor
-    }
+    public HomeFragment() {}
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -80,11 +82,24 @@ public class HomeFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         userViewModel = new ViewModelProvider(requireActivity()).get(SharedUserViewModel.class);
+        taskViewModel = new ViewModelProvider(requireActivity()).get(TaskViewModel.class);
+        projectViewModel = new ViewModelProvider(requireActivity()).get(ProjectViewModel.class);
+
         profileNameTextView = view.findViewById(R.id.profileNameTextView);
         profileImageView = view.findViewById(R.id.imageUserHome);
         tvNoTaskToday = view.findViewById(R.id.tvNoTaskToday);
+        btnViewTask = view.findViewById(R.id.btnViewTask);
+        pieChart = view.findViewById(R.id.chart);
+        setupPieChart();
+        btnViewTask.setOnClickListener(v -> {
+            FragmentTransaction transaction = requireActivity().getSupportFragmentManager().beginTransaction();
+            transaction.replace(R.id.frame_layout, new CalendarFragment());
+            transaction.addToBackStack(null);
+            transaction.commit();
+        });
+
         userViewModel.getUser().observe(getViewLifecycleOwner(), user -> {
-            if (user != null) {
+            if (user != null && user.getId() != null) {
                 profileNameTextView.setText(user.getUsername());
                 String avatarUrl = user.getAvatar();
                 if (avatarUrl != null && !avatarUrl.isEmpty()) {
@@ -93,147 +108,118 @@ public class HomeFragment extends Fragment {
                             .placeholder(R.drawable.defaulter_user)
                             .into(profileImageView);
                 }
+                getListTaskToday(user.getId());
+                projectViewModel.fetchProjects(user.getId());
+            } else {
+                Toast.makeText(getContext(), "User not found", Toast.LENGTH_SHORT).show();
             }
         });
 
-        setPieChart(view);
+        taskViewModel.getTasks().observe(getViewLifecycleOwner(), new Observer<List<TaskResponse>>() {
+            @Override
+            public void onChanged(List<TaskResponse> tasks) {
+                listInProgress.clear();
+                float totalCompletionPercentageSum = 0;
+                int totalTasksCount = 0;
+
+                if (tasks != null) {
+                    totalTasksCount = tasks.size();
+
+                    for (TaskResponse task : tasks) {
+                        if (!Boolean.TRUE.equals(task.getCompleted())) {
+                            listInProgress.add(new Progress(
+                                    task.getTitle(),
+                                    task.getProject(),
+                                    task.getLabel(),
+                                    task.getPriority(),
+                                    task.getDescription(),
+                                    getProgress(task)
+                            ));
+                        }
+                        totalCompletionPercentageSum += getProgress(task);
+                    }
+                }
+
+                float averageCompletionPercentage = 0;
+                if (totalTasksCount > 0) {
+                    averageCompletionPercentage = totalCompletionPercentageSum / totalTasksCount;
+                } else {
+                    averageCompletionPercentage = 100;
+                }
+
+                updateOverallProgressPieChart(averageCompletionPercentage);
+
+                if (listInProgress.isEmpty()) {
+                    tvNoTaskToday.setVisibility(View.VISIBLE);
+                    viewPager.setVisibility(View.GONE);
+                } else {
+                    tvNoTaskToday.setVisibility(View.GONE);
+                    viewPager.setVisibility(View.VISIBLE);
+                }
+                InProgressViewPageAdapter adapter = new InProgressViewPageAdapter(listInProgress);
+                viewPager.setAdapter(adapter);
+                countProgress.setText(String.valueOf(listInProgress.size()));
+
+                handler.removeCallbacks(runnable);
+                handler.postDelayed(runnable, 3000);
+            }
+        });
+
+        taskViewModel.getErrorMessage().observe(getViewLifecycleOwner(), new Observer<String>() {
+            @Override
+            public void onChanged(String errorMessage) {
+                if (errorMessage != null && !errorMessage.isEmpty()) {
+                    if (listInProgress.isEmpty()) {
+                        Toast.makeText(getContext(), errorMessage, Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+        });
+
+        projectViewModel.getProjectList().observe(getViewLifecycleOwner(), projects -> {
+            if (projects != null) {
+                listProject.clear();
+                listProject.addAll(projects);
+                if (projectAdapter != null) {
+                    projectAdapter.updateData(listProject);
+                }
+                countGroup.setText(String.valueOf(listProject.size()));
+            }
+        });
+
         setViewPager(view);
         setProject(view);
     }
 
-    private void setProject(View view) {
-        rvProject = view.findViewById(R.id.rvTaskGroup);
-        countGroup = view.findViewById(R.id.countGroup);
-        listProject = new ArrayList<>();
+    private int getProgress(TaskResponse task){
+        int completedSubTasks = task.getCompletedSubTasks();
+        int totalSubTasks = task.getTotalSubTasks();
 
-        projectAdapter = new ProjectAdapter(getContext(), listProject);
-        rvProject.setLayoutManager(new LinearLayoutManager(getContext()));
-        rvProject.setAdapter(projectAdapter);
-
-        // Khởi tạo ProjectViewModel
-        ProjectViewModel projectViewModel = new ViewModelProvider(requireActivity()).get(ProjectViewModel.class);
-
-        // Quan sát dữ liệu user
-        userViewModel.getUser().observe(getViewLifecycleOwner(), user -> {
-            if (user != null) {
-                // Chỉ fetch dữ liệu một lần nếu chưa có
-                if (projectViewModel.getProjectList().getValue().isEmpty()) {
-                    projectViewModel.fetchProjects(user.getId());
-                }
-            }
-        });
-
-        // Quan sát danh sách project từ ViewModel
-        projectViewModel.getProjectList().observe(getViewLifecycleOwner(), projects -> {
-            if (projects != null && !projects.isEmpty()) {
-                // Làm sạch danh sách dự án cũ trước khi thêm dữ liệu mới
-                listProject.clear();
-
-
-                // Thông báo cho Adapter về sự thay đổi dữ liệu
-                projectAdapter.updateData(projects);
-
-                // Cập nhật số lượng nhóm dự án
-                countGroup.setText(String.valueOf(projects.size()));
-            }
-        });
+        if (totalSubTasks == 0) {
+            return Boolean.TRUE.equals(task.getCompleted()) ? 100 : 0;
+        }
+        return completedSubTasks * 100 / totalSubTasks;
     }
 
+    private void updateOverallProgressPieChart(float completionPercentage) {
+        if (Float.isNaN(completionPercentage) || Float.isInfinite(completionPercentage)) {
+            completionPercentage = 100;
+        }
+        if (completionPercentage > 100) completionPercentage = 100;
+        if (completionPercentage < 0) completionPercentage = 0;
 
-    private void setViewPager(View view) {
-        viewPager = view.findViewById(R.id.viewpage);
-        countProgress = view.findViewById(R.id.countProgress);
-        listInProgress = new ArrayList<>();
-        userViewModel.getUser().observe(getViewLifecycleOwner(), user -> {
-            if (user != null) {
-                getListTaskFromApi(user.getId());
-            }
-        });
-        handler.postDelayed(runnable, 3000);
-
-        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
-            @Override public void onPageSelected(int position) {
-                handler.removeCallbacks(runnable);
-                handler.postDelayed(runnable, 3000);
-            }
-            @Override public void onPageScrollStateChanged(int state) {}
-        });
-    }
-
-    private void getListTaskFromApi(int userId) {
-//        String today = LocalDate.now().toString();
-        String today = "2025-05-13";
-
-        TaskService taskService = RetrofitClient.getRetrofit().create(TaskService.class);
-
-        taskService.getTasksByDate(today,userId).enqueue(new Callback<List<TaskResponse>>() {
-            @Override
-            public void onResponse(Call<List<TaskResponse>> call, Response<List<TaskResponse>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    List<TaskResponse> tasks = response.body();
-                    listInProgress.clear();
-
-                    // Lọc task chưa hoàn thành
-                    List<TaskResponse> unfinishedTasks = new ArrayList<>();
-                    for (TaskResponse task : tasks) {
-                        if (!task.getCompleted()) { // Giả sử phương thức isCompleted() trả về trạng thái
-                            unfinishedTasks.add(task);
-                        }
-                    }
-
-                    for (int i = 0; i < unfinishedTasks.size(); i++) {
-                        TaskResponse task = unfinishedTasks.get(i);
-                        listInProgress.add(new Progress(
-                                task.getTitle(),
-                                task.getProject(),
-                                task.getLabel(),
-                                task.getPriority(),
-                                task.getDescription(),
-                                60
-                        ));
-                    }
-                    if (listInProgress.isEmpty()) {
-                        tvNoTaskToday.setVisibility(View.VISIBLE);
-                        viewPager.setVisibility(View.GONE);
-                    } else {
-                        tvNoTaskToday.setVisibility(View.GONE);
-                        viewPager.setVisibility(View.VISIBLE);
-                    }
-                    InProgressViewPageAdapter adapter = new InProgressViewPageAdapter(listInProgress);
-                    viewPager.setAdapter(adapter);
-                    countProgress.setText(String.valueOf(listInProgress.size()));
-                } else {
-                    Toast.makeText(getContext(), "Không có task hôm nay", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onFailure(Call<List<TaskResponse>> call, Throwable t) {
-                Toast.makeText(getContext(), "Lỗi khi gọi API", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-
-    private void setPieChart(View view) {
-        PieChart pieChart = view.findViewById(R.id.chart);
         ArrayList<PieEntry> entries = new ArrayList<>();
-        entries.add(new PieEntry(75, ""));
-        entries.add(new PieEntry(25, ""));
 
-        PieDataSet dataSet = new PieDataSet(entries, "Tiến độ công việc");
+        entries.add(new PieEntry(completionPercentage, ""));
+        entries.add(new PieEntry(100f - completionPercentage, ""));
+
+        PieDataSet dataSet = new PieDataSet(entries, null);
         dataSet.setColors(Color.WHITE, Color.TRANSPARENT);
-        dataSet.setValueTextSize(16f);
         dataSet.setDrawValues(false);
 
         PieData data = new PieData(dataSet);
         pieChart.setData(data);
-        pieChart.setDrawHoleEnabled(true);
-        pieChart.setHoleRadius(75f);
-        pieChart.setTransparentCircleRadius(55f);
-        pieChart.setHoleColor(Color.TRANSPARENT);
-        pieChart.setCenterText("75%");
+        pieChart.setCenterText(String.format(Locale.getDefault(), "%.0f%%", completionPercentage));
         pieChart.setCenterTextSize(16f);
         pieChart.setCenterTextColor(Color.WHITE);
         pieChart.getDescription().setEnabled(false);
@@ -241,15 +227,93 @@ public class HomeFragment extends Fragment {
         pieChart.invalidate();
     }
 
+    private void setupPieChart() {
+        pieChart.setDrawHoleEnabled(true);
+        pieChart.setHoleRadius(75f);
+        pieChart.setTransparentCircleRadius(55f);
+        pieChart.setHoleColor(Color.TRANSPARENT);
+        pieChart.setCenterTextSize(16f);
+        pieChart.setCenterTextColor(Color.WHITE);
+        pieChart.getDescription().setEnabled(false);
+        pieChart.getLegend().setEnabled(false);
+
+        ArrayList<PieEntry> entries = new ArrayList<>();
+        entries.add(new PieEntry(0, ""));
+        entries.add(new PieEntry(100, ""));
+        PieDataSet dataSet = new PieDataSet(entries, null);
+        dataSet.setColors(Color.WHITE, Color.TRANSPARENT);
+        dataSet.setDrawValues(false);
+        PieData data = new PieData(dataSet);
+        pieChart.setData(data);
+        pieChart.setCenterText("0%");
+        pieChart.invalidate();
+    }
+
+    private void getListTaskToday(Integer userId) {
+        if (userId == null) {
+            return;
+        }
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Calendar.getInstance().getTime());
+        taskViewModel.loadTasksByDate(today, userId);
+    }
+
+    private void setProject(View view) {
+        rvProject = view.findViewById(R.id.rvTaskGroup);
+        countGroup = view.findViewById(R.id.countGroup);
+        listProject = new ArrayList<>();
+
+        // Pass 'this' as the OnProjectClickListener
+        projectAdapter = new ProjectAdapter(getContext(), listProject, this);
+        rvProject.setLayoutManager(new LinearLayoutManager(getContext()));
+        rvProject.setAdapter(projectAdapter);
+    }
+
+    private void setViewPager(View view) {
+        viewPager = view.findViewById(R.id.viewpage);
+        countProgress = view.findViewById(R.id.countProgress);
+        listInProgress = new ArrayList<>();
+
+        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                handler.removeCallbacks(runnable);
+                handler.postDelayed(runnable, 3000);
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+
+            }
+        });
+    }
+
     @Override
     public void onResume() {
         super.onResume();
         handler.postDelayed(runnable, 3000);
+        UserResponse currentUser = userViewModel.getUser().getValue();
+        if (currentUser != null && currentUser.getId() != null) {
+            // Load tasks for today when HomeFragment is resumed
+            getListTaskToday(currentUser.getId());
+        }
     }
 
     @Override
     public void onPause() {
         super.onPause();
         handler.removeCallbacks(runnable);
+    }
+
+    @Override
+    public void onProjectClick(int projectId) { // Receive Project ID (int)
+        if (getActivity() instanceof MainActivity) {
+            // Call the method in MainActivity to navigate and pass the Project ID (int)
+            ((MainActivity) getActivity()).navigateToTasksFragmentWithProject(projectId);
+        }
     }
 }

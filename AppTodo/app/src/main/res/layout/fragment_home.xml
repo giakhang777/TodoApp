@@ -179,7 +179,7 @@
         android:layout_height="wrap_content"
         android:overScrollMode="always"
         android:clipToPadding="false"
-        android:paddingBottom="200dp"
+        android:paddingBottom="120dp"
         android:layout_marginBottom="16dp"/>
 
 </LinearLayout>

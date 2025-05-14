@@ -3,20 +3,18 @@ package com.example.apptodo.activity;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.TimePickerDialog;
-import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
@@ -25,26 +23,40 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.apptodo.R;
+import com.example.apptodo.adapter.TaskAdapter;
 import com.example.apptodo.databinding.ActivityMainBinding;
-import com.example.apptodo.activity.CalendarFragment;
-import com.example.apptodo.activity.HomeFragment;
-import com.example.apptodo.activity.ProfileFragment;
-import com.example.apptodo.activity.TasksFragment;
 import com.example.apptodo.model.UserResponse;
+import com.example.apptodo.model.request.TaskRequest;
 import com.example.apptodo.model.response.LabelResponse;
 import com.example.apptodo.model.response.ProjectResponse;
+import com.example.apptodo.model.response.TaskResponse;
 import com.example.apptodo.viewmodel.LabelViewModel;
 import com.example.apptodo.viewmodel.ProjectViewModel;
 import com.example.apptodo.viewmodel.SharedUserViewModel;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.example.apptodo.viewmodel.TaskViewModel;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.textfield.TextInputEditText;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements TaskAdapter.OnItemClickListener {
 
     private ActivityMainBinding binding;
+    private SharedUserViewModel sharedUserViewModel;
+    private TaskViewModel taskViewModel;
+    private ProjectViewModel projectViewModel;
+    private LabelViewModel labelViewModel;
+
+    private Dialog taskDialog;
+
+    public static final String ARG_PROJECT_ID = "projectId";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,176 +64,515 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        sharedUserViewModel = new ViewModelProvider(this).get(SharedUserViewModel.class);
         UserResponse user = (UserResponse) getIntent().getSerializableExtra("user");
-        SharedUserViewModel viewModel = new ViewModelProvider(this).get(SharedUserViewModel.class);
-        viewModel.setUser(user);
+        if (user != null) {
+            sharedUserViewModel.setUser(user);
+        } else {
+            Toast.makeText(this, "User data not available. Please login again.", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
 
-        // Mặc định mở Fragment Home
-        replaceFragment(new HomeFragment());
+        taskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
+        projectViewModel = new ViewModelProvider(this).get(ProjectViewModel.class);
+        labelViewModel = new ViewModelProvider(this).get(LabelViewModel.class);
 
-        // Xử lý sự kiện chọn menu bottom
+        sharedUserViewModel.getUser().observe(this, userResponse -> {
+            if (userResponse != null && userResponse.getId() != null) {
+                int userId = userResponse.getId();
+                if (projectViewModel.getProjectList().getValue() == null || projectViewModel.getProjectList().getValue().isEmpty()) {
+                    projectViewModel.fetchProjects(userId);
+                }
+                if (labelViewModel.getLabels().getValue() == null || labelViewModel.getLabels().getValue().isEmpty()) {
+                    labelViewModel.loadLabels(userId);
+                }
+            }
+        });
+
+        if (savedInstanceState == null) {
+            replaceFragment(new HomeFragment());
+        }
+
         binding.bottomNavigationView.setBackground(null);
         binding.bottomNavigationView.setOnItemSelectedListener(item -> {
-            if (item.getItemId() == R.id.home) {
+            int itemId = item.getItemId();
+            if (itemId == R.id.home) {
                 replaceFragment(new HomeFragment());
-            } else if (item.getItemId() == R.id.calendar) {
+            } else if (itemId == R.id.calendar) {
                 replaceFragment(new CalendarFragment());
-            } else if (item.getItemId() == R.id.tasks) {
+            } else if (itemId == R.id.tasks) {
                 replaceFragment(new TasksFragment());
-            } else if (item.getItemId() == R.id.profile) {
+            } else if (itemId == R.id.profile) {
                 replaceFragment(new ProfileFragment());
             }
             return true;
         });
 
-        // Floating action button (Thêm task)
         FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(view -> showBottomDialog());
+        fab.setOnClickListener(view -> showAddTaskDialog());
+
+        taskViewModel.getTaskOperationResult().observe(this, taskResponse -> {
+            UserResponse currentUser = sharedUserViewModel.getUser().getValue();
+            boolean wasDeleteOperation = (taskResponse == null && taskDialog != null && taskDialog.isShowing());
+
+            if (taskResponse != null) {
+                Toast.makeText(this, "Task operation successful: " + taskResponse.getTitle(), Toast.LENGTH_SHORT).show();
+            } else if (wasDeleteOperation) {
+                Toast.makeText(this, "Task deleted successfully", Toast.LENGTH_SHORT).show();
+            }
+
+            if (currentUser != null && currentUser.getId() != null) {
+                String today = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Calendar.getInstance().getTime());
+                taskViewModel.loadTasksByDate(today, currentUser.getId());
+                taskViewModel.loadAllTasks(currentUser.getId());
+            }
+            if (taskDialog != null && taskDialog.isShowing()) {
+                taskDialog.dismiss();
+            }
+        });
+
+        taskViewModel.getErrorMessage().observe(this, errorMessage -> {
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                Toast.makeText(this, "Task error: " + errorMessage, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
-    // Thay Fragment
+    public void navigateToTasksFragmentWithProject(int projectId) {
+        TasksFragment tasksFragment = TasksFragment.newInstance(projectId);
+        replaceFragment(tasksFragment);
+        binding.bottomNavigationView.setSelectedItemId(R.id.tasks);
+    }
+
     private void replaceFragment(Fragment fragment) {
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction.replace(R.id.frame_layout, fragment);
+        transaction.addToBackStack(fragment.getClass().getSimpleName());
         transaction.commit();
     }
 
-    // Dialog thêm task
-    private void showBottomDialog() {
-        final Dialog dialog = new Dialog(this);
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog.setContentView(R.layout.bottomsheetlayout);
+    private void showAddTaskDialog() {
+        taskDialog = new Dialog(this);
+        taskDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        taskDialog.setContentView(R.layout.bottomsheetlayout);
 
-        View view = dialog.findViewById(android.R.id.content);
+        ImageView cancelButton = taskDialog.findViewById(R.id.closeButton);
+        cancelButton.setOnClickListener(v -> taskDialog.dismiss());
 
-        ImageView cancelButton = view.findViewById(R.id.closeButton);
-        cancelButton.setOnClickListener(v -> dialog.dismiss());
+        TextInputEditText taskTitleEditText = taskDialog.findViewById(R.id.taskTitle);
+        TextInputEditText taskDescriptionEditText = taskDialog.findViewById(R.id.taskDescription);
+        Spinner prioritySpinner = taskDialog.findViewById(R.id.prioritySpinner);
+        TextInputEditText scheduledDateEditText = taskDialog.findViewById(R.id.scheduledDate);
+        TextInputEditText reminderTimeEditText = taskDialog.findViewById(R.id.reminderTime);
+        Spinner projectSpinner = taskDialog.findViewById(R.id.projectSpinner);
+        Spinner labelSpinner = taskDialog.findViewById(R.id.labelSpinner);
+        Button saveButton = taskDialog.findViewById(R.id.saveButton);
+        Button deleteButton = taskDialog.findViewById(R.id.deleteButton);
+        if (deleteButton != null) {
+            deleteButton.setVisibility(View.GONE);
+        }
 
-        Spinner prioritySpinner = view.findViewById(R.id.prioritySpinner);
-        Spinner projectSpinner = view.findViewById(R.id.projectSpinner);
-        Spinner labelSpinner = view.findViewById(R.id.labelSpinner);
+        SimpleDateFormat sdfToday = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        String today = sdfToday.format(Calendar.getInstance().getTime());
+        scheduledDateEditText.setText(today);
 
-        EditText scheduledDateEditText = view.findViewById(R.id.scheduledDate);
-        EditText reminderTimeEditText = view.findViewById(R.id.reminderTime);
-
-        // Thiết lập spinner độ ưu tiên (tĩnh)
         String[] priorities = {"Low", "Medium", "High"};
-        ArrayAdapter<String> priorityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, priorities);
+        ArrayAdapter<String> priorityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, priorities);
+        priorityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         prioritySpinner.setAdapter(priorityAdapter);
 
-        // Lấy user từ ViewModel
-        SharedUserViewModel userViewModel = new ViewModelProvider(this).get(SharedUserViewModel.class);
-        int userId = userViewModel.getUser().getValue().getId();
-
-        // ViewModel cho project và label
-        ProjectViewModel projectViewModel = new ViewModelProvider(this).get(ProjectViewModel.class);
-        LabelViewModel labelViewModel = new ViewModelProvider(this).get(LabelViewModel.class);
-
-        // Gọi API để lấy danh sách
-        projectViewModel.fetchProjects(userId);
-        labelViewModel.loadLabels(userId);
-
-        // Quan sát danh sách Project
         projectViewModel.getProjectList().observe(this, projectList -> {
             List<String> projectNames = new ArrayList<>();
-            projectNames.add("Select Project"); // Add a default "null" option
-            for (ProjectResponse p : projectList) {
-                projectNames.add(p.getName());
+            projectNames.add("Select Project");
+            if (projectList != null) {
+                for (ProjectResponse project : projectList) {
+                    projectNames.add(project.getName());
+                }
             }
-            ArrayAdapter<String> projectAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, projectNames);
-            projectSpinner.setAdapter(projectAdapter);
+            ArrayAdapter<String> projectArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, projectNames);
+            projectArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            projectSpinner.setAdapter(projectArrayAdapter);
         });
 
-        // Quan sát danh sách Label
         labelViewModel.getLabels().observe(this, labelList -> {
-            List<String> labelNames = new ArrayList<>();
-            labelNames.add("Select Label"); // Add a default "null" option
-            for (LabelResponse l : labelList) {
-                labelNames.add(l.getTitle());
+            List<String> labelTitles = new ArrayList<>();
+            labelTitles.add("Select Label");
+            if (labelList != null) {
+                for (LabelResponse label : labelList) {
+                    labelTitles.add(label.getTitle());
+                }
             }
-            ArrayAdapter<String> labelAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, labelNames);
-            labelSpinner.setAdapter(labelAdapter);
+            ArrayAdapter<String> labelArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, labelTitles);
+            labelArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            labelSpinner.setAdapter(labelArrayAdapter);
         });
 
-        // Xử lý chọn ngày
-        final Calendar calendar = Calendar.getInstance();
         scheduledDateEditText.setOnClickListener(v -> {
-            int year = calendar.get(Calendar.YEAR);
-            int month = calendar.get(Calendar.MONTH);
-            int day = calendar.get(Calendar.DAY_OF_MONTH);
-
-            DatePickerDialog datePickerDialog = new DatePickerDialog(this, (view1, selectedYear, selectedMonth, selectedDay) -> {
-                String formattedDate = String.format("%02d/%02d/%04d", selectedDay, selectedMonth + 1, selectedYear);
-                scheduledDateEditText.setText(formattedDate);
-            }, year, month, day);
-
+            Calendar calendar = Calendar.getInstance();
+            try {
+                if (!scheduledDateEditText.getText().toString().isEmpty()) {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                    Date d = sdf.parse(scheduledDateEditText.getText().toString());
+                    if (d != null) calendar.setTime(d);
+                }
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            DatePickerDialog datePickerDialog = new DatePickerDialog(
+                    this,
+                    (view1, year, month, dayOfMonth) -> {
+                        Calendar selectedDate = Calendar.getInstance();
+                        selectedDate.set(year, month, dayOfMonth);
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                        String formattedSelectedDate = sdf.format(selectedDate.getTime());
+                        scheduledDateEditText.setText(formattedSelectedDate);
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+            );
+            datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
             datePickerDialog.show();
         });
 
-        // Xử lý chọn giờ
         reminderTimeEditText.setOnClickListener(v -> {
+            Calendar calendar = Calendar.getInstance();
+            try {
+                if (!reminderTimeEditText.getText().toString().isEmpty()) {
+                    String[] timeParts = reminderTimeEditText.getText().toString().split(":");
+                    if (timeParts.length == 2) {
+                        calendar.set(Calendar.HOUR_OF_DAY, Integer.parseInt(timeParts[0]));
+                        calendar.set(Calendar.MINUTE, Integer.parseInt(timeParts[1]));
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             int hour = calendar.get(Calendar.HOUR_OF_DAY);
-            int minute = calendar.get(Calendar.MINUTE);
-
-            TimePickerDialog timePickerDialog = new TimePickerDialog(this, (view12, selectedHour, selectedMinute) -> {
-                String formattedTime = String.format("%02d:%02d", selectedHour, selectedMinute);
-                reminderTimeEditText.setText(formattedTime);
-            }, hour, minute, true);
-
+            int currentMinute = calendar.get(Calendar.MINUTE);
+            TimePickerDialog timePickerDialog = new TimePickerDialog(
+                    this,
+                    (view1, hourOfDay, selectedMinute) -> {
+                        String time = String.format(Locale.getDefault(), "%02d:%02d", hourOfDay, selectedMinute);
+                        reminderTimeEditText.setText(time);
+                    },
+                    hour,
+                    currentMinute,
+                    true
+            );
             timePickerDialog.show();
         });
 
-        // Nút Save
-        Button saveButton = view.findViewById(R.id.saveButton);
-        saveButton.setOnClickListener(v -> {
-            // Lấy dữ liệu từ các trường nhập
-            EditText taskTitleEditText = view.findViewById(R.id.taskTitle);
-            EditText taskDescriptionEditText = view.findViewById(R.id.taskDescription);
+        saveButton.setText("SAVE");
 
+        saveButton.setOnClickListener(v -> {
             String title = taskTitleEditText.getText().toString().trim();
             String description = taskDescriptionEditText.getText().toString().trim();
             String priority = prioritySpinner.getSelectedItem().toString();
-            String projectName = projectSpinner.getSelectedItem().toString();
-            String labelTitle = labelSpinner.getSelectedItem().toString();
-            String scheduledDate = scheduledDateEditText.getText().toString();
-            String reminderTime = reminderTimeEditText.getText().toString();
+            String dueDate = scheduledDateEditText.getText().toString();
+            String reminderTimeStr = reminderTimeEditText.getText().toString();
+            String selectedProjectName = projectSpinner.getSelectedItemPosition() > 0 ? projectSpinner.getSelectedItem().toString() : null;
+            String selectedLabelTitle = labelSpinner.getSelectedItemPosition() > 0 ? labelSpinner.getSelectedItem().toString() : null;
 
-            // Nếu không chọn Project hay Label thì dùng giá trị null
-            if (projectName.equals("Select Project")) {
-                projectName = null;  // Nếu không chọn, gán là null
+            if (title.isEmpty()) {
+                taskTitleEditText.setError("Title is required");
+                return;
             }
-            if (labelTitle.equals("Select Label")) {
-                labelTitle = null;  // Nếu không chọn, gán là null
+            if (dueDate.isEmpty()){
+                scheduledDateEditText.setError("Due date is required");
+                return;
             }
 
-            // TODO: Nếu bạn có ViewModel hoặc API để tạo task:
-            // 1. Chuyển projectName & labelTitle sang ID (nếu cần)
-            // 2. Tạo object TaskRequest và gọi API để lưu task
-            // 3. Hiển thị thông báo thành công hoặc lỗi
-            // 4. Đóng dialog nếu thành công
-
-            Log.d("SAVE_TASK", "Title: " + title);
-            Log.d("SAVE_TASK", "Description: " + description);
-            Log.d("SAVE_TASK", "Priority: " + priority);
-            Log.d("SAVE_TASK", "Project: " + projectName);
-            Log.d("SAVE_TASK", "Label: " + labelTitle);
-            Log.d("SAVE_TASK", "Scheduled Date: " + scheduledDate);
-            Log.d("SAVE_TASK", "Reminder Time: " + reminderTime);
-
-            // Tạm thời chỉ đóng dialog
-            dialog.dismiss();
+            UserResponse currentUser = sharedUserViewModel.getUser().getValue();
+            if (currentUser == null || currentUser.getId() == null) {
+                Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            int userId = currentUser.getId();
+            Integer projectId = null;
+            if (selectedProjectName != null && projectViewModel.getProjectList().getValue() != null) {
+                for (ProjectResponse project : projectViewModel.getProjectList().getValue()) {
+                    if (project.getName().equals(selectedProjectName)) {
+                        projectId = project.getId();
+                        break;
+                    }
+                }
+            }
+            Integer labelId = null;
+            if (selectedLabelTitle != null && labelViewModel.getLabels().getValue() != null) {
+                for (LabelResponse label : labelViewModel.getLabels().getValue()) {
+                    if (label.getTitle().equals(selectedLabelTitle)) {
+                        labelId = label.getId();
+                        break;
+                    }
+                }
+            }
+            TaskRequest taskRequest = new TaskRequest(
+                    title,
+                    userId,
+                    priority,
+                    dueDate,
+                    description.isEmpty() ? null : description,
+                    !reminderTimeStr.isEmpty(),
+                    reminderTimeStr.isEmpty() ? null : dueDate + "T" + reminderTimeStr + ":00",
+                    projectId,
+                    labelId
+            );
+            taskViewModel.createTask(taskRequest);
         });
 
-        // Hiển thị dialog
-        dialog.show();
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            dialog.getWindow().getAttributes().windowAnimations = R.style.DialogAnimation;
-            dialog.getWindow().setGravity(Gravity.BOTTOM);
+        taskDialog.show();
+        if (taskDialog.getWindow() != null) {
+            taskDialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            taskDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            taskDialog.getWindow().getAttributes().windowAnimations = R.style.DialogAnimation;
+            taskDialog.getWindow().setGravity(Gravity.BOTTOM);
         }
     }
 
+    private void showEditTaskDialog(TaskResponse taskToEdit) {
+        if (taskToEdit == null || taskToEdit.getId() == null) {
+            Toast.makeText(this, "Invalid task for editing.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
+        taskDialog = new Dialog(this);
+        taskDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        taskDialog.setContentView(R.layout.bottomsheetlayout);
+
+        ImageView cancelButton = taskDialog.findViewById(R.id.closeButton);
+        cancelButton.setOnClickListener(v -> taskDialog.dismiss());
+
+        TextInputEditText taskTitleEditText = taskDialog.findViewById(R.id.taskTitle);
+        TextInputEditText taskDescriptionEditText = taskDialog.findViewById(R.id.taskDescription);
+        Spinner prioritySpinner = taskDialog.findViewById(R.id.prioritySpinner);
+        TextInputEditText scheduledDateEditText = taskDialog.findViewById(R.id.scheduledDate);
+        TextInputEditText reminderTimeEditText = taskDialog.findViewById(R.id.reminderTime);
+        Spinner projectSpinner = taskDialog.findViewById(R.id.projectSpinner);
+        Spinner labelSpinner = taskDialog.findViewById(R.id.labelSpinner);
+        Button saveButton = taskDialog.findViewById(R.id.saveButton);
+        Button deleteButton = taskDialog.findViewById(R.id.deleteButton);
+        if (deleteButton != null) {
+            deleteButton.setVisibility(View.VISIBLE);
+            deleteButton.setOnClickListener(v -> {
+                if (taskToEdit.getId() != null) {
+                    taskViewModel.deleteTask(taskToEdit.getId());
+                } else {
+                    Toast.makeText(this, "Cannot delete task without ID", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+        String[] priorities = {"Low", "Medium", "High"};
+        ArrayAdapter<String> priorityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, priorities);
+        priorityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        prioritySpinner.setAdapter(priorityAdapter);
+
+        String taskSelectedProjectName = taskToEdit.getProject();
+        String taskSelectedLabelTitle = taskToEdit.getLabel();
+
+        projectViewModel.getProjectList().observe(this, projectList -> {
+            List<String> projectNames = new ArrayList<>();
+            projectNames.add("Select Project");
+            int selectedProjectPosition = 0;
+            if (projectList != null) {
+                for (ProjectResponse project : projectList) {
+                    projectNames.add(project.getName());
+                }
+                if (taskSelectedProjectName != null) {
+                    for (int i = 0; i < projectNames.size(); i++) {
+                        if (projectNames.get(i).equals(taskSelectedProjectName)) {
+                            selectedProjectPosition = i;
+                            break;
+                        }
+                    }
+                }
+            }
+            ArrayAdapter<String> projectArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, projectNames);
+            projectArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            projectSpinner.setAdapter(projectArrayAdapter);
+            if (projectNames.size() > selectedProjectPosition) {
+                projectSpinner.setSelection(selectedProjectPosition);
+            }
+        });
+
+        labelViewModel.getLabels().observe(this, labelList -> {
+            List<String> labelTitles = new ArrayList<>();
+            labelTitles.add("Select Label");
+            int selectedLabelPosition = 0;
+            if (labelList != null && !labelList.isEmpty()) {
+                for (LabelResponse label : labelList) {
+                    labelTitles.add(label.getTitle());
+                }
+                if (taskSelectedLabelTitle != null) {
+                    for (int i = 0; i < labelTitles.size(); i++) {
+                        if (labelTitles.get(i).equals(taskSelectedLabelTitle)) {
+                            selectedLabelPosition = i;
+                            break;
+                        }
+                    }
+                }
+            }
+            ArrayAdapter<String> labelArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, labelTitles);
+            labelArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            labelSpinner.setAdapter(labelArrayAdapter);
+            if (labelTitles.size() > selectedLabelPosition) {
+                labelSpinner.setSelection(selectedLabelPosition);
+            } else {
+                labelSpinner.setSelection(0);
+            }
+        });
+
+        scheduledDateEditText.setOnClickListener(v -> {
+            Calendar calendar = Calendar.getInstance();
+            if (taskToEdit.getDueDate() != null && !taskToEdit.getDueDate().isEmpty()) {
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                    Date dueDate = sdf.parse(taskToEdit.getDueDate());
+                    if (dueDate != null) {
+                        calendar.setTime(dueDate);
+                    }
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+            }
+            DatePickerDialog datePickerDialog = new DatePickerDialog(
+                    this,
+                    (view1, year, month, dayOfMonth) -> {
+                        Calendar selectedDate = Calendar.getInstance();
+                        selectedDate.set(year, month, dayOfMonth);
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                        String formattedSelectedDate = sdf.format(selectedDate.getTime());
+                        scheduledDateEditText.setText(formattedSelectedDate);
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+            );
+            datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
+            datePickerDialog.show();
+        });
+
+        reminderTimeEditText.setOnClickListener(v -> {
+            Calendar calendar = Calendar.getInstance();
+            if (taskToEdit.getReminderTime() != null && !taskToEdit.getReminderTime().isEmpty()) {
+                try {
+                    String[] timeParts = taskToEdit.getReminderTime().split(":");
+                    if (timeParts.length == 2) {
+                        calendar.set(Calendar.HOUR_OF_DAY, Integer.parseInt(timeParts[0]));
+                        calendar.set(Calendar.MINUTE, Integer.parseInt(timeParts[1]));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            int hour = calendar.get(Calendar.HOUR_OF_DAY);
+            int currentMinute = calendar.get(Calendar.MINUTE);
+            TimePickerDialog timePickerDialog = new TimePickerDialog(
+                    this,
+                    (view1, hourOfDay, selectedMinute) -> {
+                        String time = String.format(Locale.getDefault(), "%02d:%02d", hourOfDay, selectedMinute);
+                        reminderTimeEditText.setText(time);
+                    },
+                    hour,
+                    currentMinute,
+                    true
+            );
+            timePickerDialog.show();
+        });
+
+        taskTitleEditText.setText(taskToEdit.getTitle());
+        taskDescriptionEditText.setText(taskToEdit.getDescription());
+
+        String taskPriority = taskToEdit.getPriority();
+        if (taskPriority != null) {
+            int priorityPosition = 0;
+            for (int i = 0; i < priorities.length; i++) {
+                if (priorities[i].equalsIgnoreCase(taskPriority)) {
+                    priorityPosition = i;
+                    break;
+                }
+            }
+            prioritySpinner.setSelection(priorityPosition);
+        }
+
+        if (taskToEdit.getDueDate() != null) {
+            scheduledDateEditText.setText(taskToEdit.getDueDate());
+        }
+        if (taskToEdit.getReminderTime() != null) {
+            reminderTimeEditText.setText(taskToEdit.getReminderTime());
+        }
+
+        saveButton.setText("UPDATE");
+        saveButton.setOnClickListener(v -> {
+            String title = taskTitleEditText.getText().toString().trim();
+            String description = taskDescriptionEditText.getText().toString().trim();
+            String priority = prioritySpinner.getSelectedItem().toString();
+            String dueDate = scheduledDateEditText.getText().toString();
+            String reminderTimeStr = reminderTimeEditText.getText().toString();
+            String selectedProjectNameFromSpinner = projectSpinner.getSelectedItemPosition() > 0 ? projectSpinner.getSelectedItem().toString() : null;
+            String selectedLabelTitleFromSpinner = labelSpinner.getSelectedItemPosition() > 0 ? labelSpinner.getSelectedItem().toString() : null;
+
+            if (title.isEmpty()) {
+                taskTitleEditText.setError("Title is required");
+                return;
+            }
+            if (dueDate.isEmpty()){
+                scheduledDateEditText.setError("Due date is required");
+                return;
+            }
+
+            UserResponse currentUser = sharedUserViewModel.getUser().getValue();
+            if (currentUser == null || currentUser.getId() == null) {
+                Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            int userId = currentUser.getId();
+            Integer projectId = null;
+            if (selectedProjectNameFromSpinner != null && projectViewModel.getProjectList().getValue() != null) {
+                for (ProjectResponse project : projectViewModel.getProjectList().getValue()) {
+                    if (project.getName().equals(selectedProjectNameFromSpinner)) {
+                        projectId = project.getId();
+                        break;
+                    }
+                }
+            }
+            Integer labelId = null;
+            if (selectedLabelTitleFromSpinner != null && labelViewModel.getLabels().getValue() != null) {
+                for (LabelResponse label : labelViewModel.getLabels().getValue()) {
+                    if (label.getTitle().equals(selectedLabelTitleFromSpinner)) {
+                        labelId = label.getId();
+                        break;
+                    }
+                }
+            }
+            TaskRequest taskRequest = new TaskRequest(
+                    title,
+                    userId,
+                    priority,
+                    dueDate,
+                    description.isEmpty() ? null : description,
+                    !reminderTimeStr.isEmpty(),
+                    reminderTimeStr.isEmpty() ? null : dueDate + "T" + reminderTimeStr + ":00",
+                    projectId,
+                    labelId
+            );
+            taskViewModel.updateTask(taskToEdit.getId(), taskRequest);
+        });
+
+        taskDialog.show();
+        if (taskDialog.getWindow() != null) {
+            taskDialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            taskDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            taskDialog.getWindow().getAttributes().windowAnimations = R.style.DialogAnimation;
+            taskDialog.getWindow().setGravity(Gravity.BOTTOM);
+        }
+    }
+
+    @Override
+    public void onItemClick(TaskResponse task) {
+        showEditTaskDialog(task);
+    }
 }

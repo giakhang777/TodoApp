@@ -68,9 +68,9 @@ public class InProgressViewPageAdapter extends PagerAdapter {
         Progress model = imageList.get(position);
 
         label.setText(model.getNameLabel());
-        project.setText(model.getNameProject().trim());
-        task.setText(model.getNameTask().trim());
-        desc.setText(model.getDescription().trim());
+        project.setText(model.getNameProject());
+        task.setText(model.getNameTask());
+        desc.setText(model.getDescription());
         progressBar.setProgress(model.getProgress());
 
         // Đặt màu nền theo độ ưu tiên

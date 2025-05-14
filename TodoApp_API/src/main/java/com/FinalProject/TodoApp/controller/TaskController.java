@@ -20,7 +20,7 @@ public class TaskController {
     private ITaskService taskService;
 
     @PostMapping("")
-    public ResponseEntity<?> createTask(@Valid @RequestBody TaskRequestDTO dto) {
+    public ResponseEntity<?> createTask(@RequestBody TaskRequestDTO dto) {
         try {
             TaskResponseDTO task = taskService.createTask(dto);
             return ResponseEntity.ok(task);
@@ -59,7 +59,7 @@ public class TaskController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateTask(@Valid @PathVariable Integer id, @Valid @RequestBody TaskRequestDTO dto) {
+    public ResponseEntity<?> updateTask( @PathVariable Integer id, @RequestBody TaskRequestDTO dto) {
         try {
             TaskResponseDTO updated = taskService.updateTask(id, dto);
             return ResponseEntity.ok(updated);

@@ -9,5 +9,4 @@ public class ProjectResponse {
     private String color;
     private int totalTasks;
     private int completedTasks;
-
 }

@@ -17,15 +17,18 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.apptodo.R;
 import com.example.apptodo.adapter.TaskAdapter;
 import com.example.apptodo.model.UserResponse;
-import com.example.apptodo.model.response.TaskResponse;
+import com.example.apptodo.model.response.TaskResponse; // Import TaskResponse
+
 import com.example.apptodo.viewmodel.SharedUserViewModel;
 import com.example.apptodo.viewmodel.TaskViewModel;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import java.time.LocalDate; // Import LocalDate
+import java.time.format.DateTimeFormatter; // Import DateTimeFormatter
+import java.time.format.DateTimeParseException; // Import DateTimeParseException
 import java.util.ArrayList;
+import java.util.Collections; // Import Collections
+import java.util.Comparator; // Import Comparator
 import java.util.List;
-import java.util.Collections;
 
 public class ExpiredTasksFragment extends Fragment implements TaskAdapter.OnTaskStatusUpdatedListener {
     private RecyclerView recyclerView;
@@ -48,12 +51,13 @@ public class ExpiredTasksFragment extends Fragment implements TaskAdapter.OnTask
         recyclerView.setAdapter(taskAdapter);
 
         sharedUserViewModel = new ViewModelProvider(requireActivity()).get(SharedUserViewModel.class);
-        taskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
+        taskViewModel = new ViewModelProvider(requireActivity()).get(TaskViewModel.class);
 
         taskViewModel.getTasks().observe(getViewLifecycleOwner(), new Observer<List<TaskResponse>>() {
             @Override
             public void onChanged(List<TaskResponse> tasks) {
                 taskList.clear();
+                List<TaskResponse> expiredTasks = new ArrayList<>();
                 if (tasks != null) {
                     LocalDate today = LocalDate.now();
                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -62,13 +66,34 @@ public class ExpiredTasksFragment extends Fragment implements TaskAdapter.OnTask
                             try {
                                 LocalDate dueDate = LocalDate.parse(task.getDueDate(), formatter);
                                 if (dueDate.isBefore(today)) {
-                                    taskList.add(task);
+                                    expiredTasks.add(task);
                                 }
-                            } catch (Exception e) {
+                            } catch (DateTimeParseException e) {
+                                e.printStackTrace();
                             }
                         }
                     }
                 }
+                Collections.sort(expiredTasks, new Comparator<TaskResponse>() {
+                    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+                    @Override
+                    public int compare(TaskResponse t1, TaskResponse t2) {
+                        if (t1.getDueDate() == null && t2.getDueDate() == null) return 0;
+                        if (t1.getDueDate() == null) return 1; // Nulls last
+                        if (t2.getDueDate() == null) return -1; // Nulls last
+
+                        try {
+                            LocalDate date1 = LocalDate.parse(t1.getDueDate(), formatter);
+                            LocalDate date2 = LocalDate.parse(t2.getDueDate(), formatter);
+                            return date1.compareTo(date2); // Tăng dần
+                        } catch (DateTimeParseException e) {
+                            e.printStackTrace();
+                            return 0;
+                        }
+                    }
+                });
+                taskList.addAll(expiredTasks);
                 taskAdapter.setTaskList(taskList);
                 updateEmptyTasksVisibility();
             }
@@ -84,11 +109,9 @@ public class ExpiredTasksFragment extends Fragment implements TaskAdapter.OnTask
         });
 
         taskViewModel.getTaskOperationResult().observe(getViewLifecycleOwner(), taskResponse -> {
-            if (taskResponse != null || taskResponse == null) {
-                if (sharedUserViewModel.getUser().getValue() != null && isAdded()) {
-                    int userId = sharedUserViewModel.getUser().getValue().getId();
-                    taskViewModel.loadAllTasks(userId);
-                }
+            if (sharedUserViewModel.getUser().getValue() != null && isAdded()) {
+                int userId = sharedUserViewModel.getUser().getValue().getId();
+                taskViewModel.loadAllTasks(userId);
             }
         });
 
@@ -121,16 +144,6 @@ public class ExpiredTasksFragment extends Fragment implements TaskAdapter.OnTask
                 emptyTasksText.setVisibility(View.GONE);
                 recyclerView.setVisibility(View.VISIBLE);
             }
-        }
-    }
-
-    private int getPriorityValue(String priority) {
-        if (priority == null) return 3;
-        switch (priority.toLowerCase()) {
-            case "high": return 0;
-            case "medium": return 1;
-            case "low": return 2;
-            default: return 3;
         }
     }
 

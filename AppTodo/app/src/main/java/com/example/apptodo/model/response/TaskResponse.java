@@ -19,6 +19,8 @@ public class TaskResponse extends BaseModel {
     private Boolean reminder;
     private String reminderTime;
     private Boolean completed;
+    private int totalSubTasks;
+    private int completedSubTasks;
 
     public TaskResponse(Integer id, String project, String title, String priority, String dueDate,
                         String label, String description, Boolean reminder, String reminderTime, Boolean completed) {
@@ -30,8 +32,24 @@ public class TaskResponse extends BaseModel {
         this.label = label;
         this.description = description;
         this.reminder = reminder;
-        this.reminderTime = reminderTime; // 🆕
+        this.reminderTime = reminderTime;
         this.completed = completed;
+    }
+
+    public int getTotalSubTasks() {
+        return totalSubTasks;
+    }
+
+    public void setTotalSubTasks(int totalSubTasks) {
+        this.totalSubTasks = totalSubTasks;
+    }
+
+    public int getCompletedSubTasks() {
+        return completedSubTasks;
+    }
+
+    public void setCompletedSubTasks(int completedSubTasks) {
+        this.completedSubTasks = completedSubTasks;
     }
 
     // Getter và Setter cho reminderTime
