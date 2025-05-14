@@ -1,0 +1,33 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/bg_dialog_rounded">
+
+    <!-- Tiêu đề Add Project -->
+    <TextView
+        android:id="@+id/tv_dialog_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add Sub Task"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:gravity="center"
+        android:paddingBottom="20dp" />
+
+
+    <EditText
+        android:id="@+id/et_label_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Sub Task Name"
+        android:padding="12dp"
+        android:background="@drawable/edit_text_background"
+        android:textColor="@color/black"
+        android:textColorHint="#888888"
+        android:layout_marginBottom="16dp"
+        android:inputType="textPersonName" />
+
+</LinearLayout>

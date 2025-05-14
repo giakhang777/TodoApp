@@ -31,4 +31,6 @@ public class TaskResponseDTO extends BaseResponseDTO {
 
     @JsonProperty("updated_at")
     private LocalDateTime updatedAt;
+    private int totalSubTasks;
+    private int completedSubTasks;
 }
