@@ -3,6 +3,7 @@ package com.example.apptodo.activity;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,8 +15,6 @@ import android.widget.Button;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentTransaction;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -42,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 public class HomeFragment extends Fragment implements ProjectAdapter.OnProjectClickListener {
 
@@ -52,7 +52,7 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnProjectCl
     private ViewPager viewPager;
     private List<Progress> listInProgress;
     private ImageView profileImageView;
-    private Handler handler = new Handler();
+    private Handler handler = new Handler(Looper.getMainLooper());
     private SharedUserViewModel userViewModel;
     private TaskViewModel taskViewModel;
     private ProjectViewModel projectViewModel;
@@ -64,8 +64,11 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnProjectCl
         public void run() {
             if (viewPager != null && listInProgress != null && !listInProgress.isEmpty()) {
                 int currentItem = viewPager.getCurrentItem();
-                viewPager.setCurrentItem((currentItem + 1) % listInProgress.size());
+                if (listInProgress.size() > 0) {
+                    viewPager.setCurrentItem((currentItem + 1) % listInProgress.size());
+                }
             }
+            handler.postDelayed(this, 3000);
         }
     };
 
@@ -91,11 +94,11 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnProjectCl
         btnViewTask = view.findViewById(R.id.btnViewTask);
         pieChart = view.findViewById(R.id.chart);
         setupPieChart();
+
         btnViewTask.setOnClickListener(v -> {
-            FragmentTransaction transaction = requireActivity().getSupportFragmentManager().beginTransaction();
-            transaction.replace(R.id.frame_layout, new CalendarFragment());
-            transaction.addToBackStack(null);
-            transaction.commit();
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).navigateToCalendarFragment();
+            }
         });
 
         userViewModel.getUser().observe(getViewLifecycleOwner(), user -> {
@@ -106,85 +109,101 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnProjectCl
                     Glide.with(requireContext())
                             .load(avatarUrl)
                             .placeholder(R.drawable.defaulter_user)
+                            .error(R.drawable.defaulter_user)
                             .into(profileImageView);
+                } else {
+                    profileImageView.setImageResource(R.drawable.defaulter_user);
                 }
                 getListTaskToday(user.getId());
                 projectViewModel.fetchProjects(user.getId());
             } else {
-                Toast.makeText(getContext(), "User not found", Toast.LENGTH_SHORT).show();
+                profileNameTextView.setText("Guest");
+                profileImageView.setImageResource(R.drawable.defaulter_user);
+                if(listInProgress != null) listInProgress.clear();
+                if (viewPager != null && viewPager.getAdapter() != null) {
+                    viewPager.getAdapter().notifyDataSetChanged();
+                }
+                if(countProgress != null) countProgress.setText("0");
+                if(tvNoTaskToday != null) tvNoTaskToday.setVisibility(View.VISIBLE);
+                if(viewPager != null) viewPager.setVisibility(View.GONE);
+                updateOverallProgressPieChart(0);
+
+
+                if(listProject != null) listProject.clear();
+                if(projectAdapter != null) projectAdapter.updateData(listProject != null ? listProject : new ArrayList<>());
+                if(countGroup != null) countGroup.setText("0");
+                Toast.makeText(getContext(), "User not found or not logged in.", Toast.LENGTH_SHORT).show();
             }
         });
 
-        taskViewModel.getTasks().observe(getViewLifecycleOwner(), new Observer<List<TaskResponse>>() {
-            @Override
-            public void onChanged(List<TaskResponse> tasks) {
-                listInProgress.clear();
-                float totalCompletionPercentageSum = 0;
-                int totalTasksCount = 0;
+        taskViewModel.getTasks().observe(getViewLifecycleOwner(), tasks -> {
+            if (listInProgress == null) listInProgress = new ArrayList<>();
+            listInProgress.clear();
+            float totalCompletionPercentageSum = 0;
+            int totalTasksCount = 0;
 
-                if (tasks != null) {
-                    totalTasksCount = tasks.size();
-
-                    for (TaskResponse task : tasks) {
-                        if (!Boolean.TRUE.equals(task.getCompleted())) {
-                            listInProgress.add(new Progress(
-                                    task.getTitle(),
-                                    task.getProject(),
-                                    task.getLabel(),
-                                    task.getPriority(),
-                                    task.getDescription(),
-                                    getProgress(task)
-                            ));
-                        }
-                        totalCompletionPercentageSum += getProgress(task);
+            if (tasks != null) {
+                for (TaskResponse task : tasks) {
+                    if (!Boolean.TRUE.equals(task.getCompleted())) {
+                        listInProgress.add(new Progress(
+                                task.getTitle(),
+                                task.getProject(),
+                                task.getLabel(),
+                                task.getPriority(),
+                                task.getDescription(),
+                                getProgress(task)
+                        ));
                     }
+                    totalCompletionPercentageSum += getProgress(task);
+                    totalTasksCount++;
                 }
+            }
 
-                float averageCompletionPercentage = 0;
-                if (totalTasksCount > 0) {
-                    averageCompletionPercentage = totalCompletionPercentageSum / totalTasksCount;
-                } else {
-                    averageCompletionPercentage = 100;
-                }
+            float averageCompletionPercentage = (totalTasksCount > 0) ? (totalCompletionPercentageSum / totalTasksCount) : 0;
+            updateOverallProgressPieChart(averageCompletionPercentage);
 
-                updateOverallProgressPieChart(averageCompletionPercentage);
+            if (listInProgress.isEmpty()) {
+                if(tvNoTaskToday != null) tvNoTaskToday.setVisibility(View.VISIBLE);
+                if(viewPager != null) viewPager.setVisibility(View.GONE);
+            } else {
+                if(tvNoTaskToday != null) tvNoTaskToday.setVisibility(View.GONE);
+                if(viewPager != null) viewPager.setVisibility(View.VISIBLE);
+            }
 
-                if (listInProgress.isEmpty()) {
-                    tvNoTaskToday.setVisibility(View.VISIBLE);
-                    viewPager.setVisibility(View.GONE);
-                } else {
-                    tvNoTaskToday.setVisibility(View.GONE);
-                    viewPager.setVisibility(View.VISIBLE);
-                }
-                InProgressViewPageAdapter adapter = new InProgressViewPageAdapter(listInProgress);
+            if(viewPager != null && getContext() != null) {
+                InProgressViewPageAdapter adapter = new InProgressViewPageAdapter(new ArrayList<>(listInProgress));
                 viewPager.setAdapter(adapter);
-                countProgress.setText(String.valueOf(listInProgress.size()));
+            }
+            if(countProgress != null) countProgress.setText(String.valueOf(listInProgress.size()));
+        });
 
-                handler.removeCallbacks(runnable);
-                handler.postDelayed(runnable, 3000);
+
+        taskViewModel.getSingleTask().observe(getViewLifecycleOwner(), updatedTask -> {
+            if (updatedTask != null && userViewModel.getUser().getValue() != null && userViewModel.getUser().getValue().getId() != null) {
+                getListTaskToday(userViewModel.getUser().getValue().getId());
+                projectViewModel.fetchProjects(userViewModel.getUser().getValue().getId());
             }
         });
 
-        taskViewModel.getErrorMessage().observe(getViewLifecycleOwner(), new Observer<String>() {
-            @Override
-            public void onChanged(String errorMessage) {
-                if (errorMessage != null && !errorMessage.isEmpty()) {
-                    if (listInProgress.isEmpty()) {
-                        Toast.makeText(getContext(), errorMessage, Toast.LENGTH_SHORT).show();
-                    }
+
+        taskViewModel.getErrorMessage().observe(getViewLifecycleOwner(), errorMessage -> {
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                if (listInProgress != null && listInProgress.isEmpty()) {
+                    Toast.makeText(getContext(), errorMessage, Toast.LENGTH_SHORT).show();
                 }
             }
         });
 
         projectViewModel.getProjectList().observe(getViewLifecycleOwner(), projects -> {
+            if (listProject == null) listProject = new ArrayList<>();
+            listProject.clear();
             if (projects != null) {
-                listProject.clear();
                 listProject.addAll(projects);
-                if (projectAdapter != null) {
-                    projectAdapter.updateData(listProject);
-                }
-                countGroup.setText(String.valueOf(listProject.size()));
             }
+            if (projectAdapter != null) {
+                projectAdapter.updateData(listProject);
+            }
+            if(countGroup != null) countGroup.setText(String.valueOf(listProject.size()));
         });
 
         setViewPager(view);
@@ -192,80 +211,75 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnProjectCl
     }
 
     private int getProgress(TaskResponse task){
+        if (task == null) return 0;
         int completedSubTasks = task.getCompletedSubTasks();
         int totalSubTasks = task.getTotalSubTasks();
 
         if (totalSubTasks == 0) {
             return Boolean.TRUE.equals(task.getCompleted()) ? 100 : 0;
         }
-        return completedSubTasks * 100 / totalSubTasks;
+        return (completedSubTasks * 100) / totalSubTasks;
     }
 
     private void updateOverallProgressPieChart(float completionPercentage) {
+        if (pieChart == null) return;
         if (Float.isNaN(completionPercentage) || Float.isInfinite(completionPercentage)) {
-            completionPercentage = 100;
+            completionPercentage = 0;
         }
-        if (completionPercentage > 100) completionPercentage = 100;
-        if (completionPercentage < 0) completionPercentage = 0;
+        completionPercentage = Math.max(0f, Math.min(100f, completionPercentage));
 
         ArrayList<PieEntry> entries = new ArrayList<>();
-
         entries.add(new PieEntry(completionPercentage, ""));
-        entries.add(new PieEntry(100f - completionPercentage, ""));
+        entries.add(new PieEntry(Math.max(0f, 100f - completionPercentage), ""));
 
-        PieDataSet dataSet = new PieDataSet(entries, null);
+        PieDataSet dataSet = new PieDataSet(entries, "");
         dataSet.setColors(Color.WHITE, Color.TRANSPARENT);
         dataSet.setDrawValues(false);
+        dataSet.setSliceSpace(0f);
 
         PieData data = new PieData(dataSet);
         pieChart.setData(data);
         pieChart.setCenterText(String.format(Locale.getDefault(), "%.0f%%", completionPercentage));
-        pieChart.setCenterTextSize(16f);
-        pieChart.setCenterTextColor(Color.WHITE);
-        pieChart.getDescription().setEnabled(false);
-        pieChart.getLegend().setEnabled(false);
         pieChart.invalidate();
     }
 
     private void setupPieChart() {
+        if (pieChart == null) return;
         pieChart.setDrawHoleEnabled(true);
-        pieChart.setHoleRadius(75f);
-        pieChart.setTransparentCircleRadius(55f);
+        pieChart.setHoleRadius(85f);
+        pieChart.setTransparentCircleRadius(85f);
         pieChart.setHoleColor(Color.TRANSPARENT);
-        pieChart.setCenterTextSize(16f);
+        pieChart.setCenterTextSize(14f);
         pieChart.setCenterTextColor(Color.WHITE);
         pieChart.getDescription().setEnabled(false);
         pieChart.getLegend().setEnabled(false);
-
-        ArrayList<PieEntry> entries = new ArrayList<>();
-        entries.add(new PieEntry(0, ""));
-        entries.add(new PieEntry(100, ""));
-        PieDataSet dataSet = new PieDataSet(entries, null);
-        dataSet.setColors(Color.WHITE, Color.TRANSPARENT);
-        dataSet.setDrawValues(false);
-        PieData data = new PieData(dataSet);
-        pieChart.setData(data);
-        pieChart.setCenterText("0%");
-        pieChart.invalidate();
+        pieChart.setTouchEnabled(false);
+        pieChart.setUsePercentValues(false);
+        updateOverallProgressPieChart(0);
     }
 
     private void getListTaskToday(Integer userId) {
         if (userId == null) {
+            if (taskViewModel != null) {
+                taskViewModel.clearTasksLiveData();
+            }
             return;
         }
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Calendar.getInstance().getTime());
-        taskViewModel.loadTasksByDate(today, userId);
+        if (taskViewModel != null) {
+            taskViewModel.loadTasksByDate(today, userId);
+        }
     }
 
     private void setProject(View view) {
         rvProject = view.findViewById(R.id.rvTaskGroup);
         countGroup = view.findViewById(R.id.countGroup);
         listProject = new ArrayList<>();
-
-        // Pass 'this' as the OnProjectClickListener
-        projectAdapter = new ProjectAdapter(getContext(), listProject, this);
-        rvProject.setLayoutManager(new LinearLayoutManager(getContext()));
-        rvProject.setAdapter(projectAdapter);
+        if (getContext() != null) {
+            projectAdapter = new ProjectAdapter(getContext(), listProject, this);
+            rvProject.setLayoutManager(new LinearLayoutManager(getContext()));
+            rvProject.setAdapter(projectAdapter);
+        }
     }
 
     private void setViewPager(View view) {
@@ -273,33 +287,40 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnProjectCl
         countProgress = view.findViewById(R.id.countProgress);
         listInProgress = new ArrayList<>();
 
-        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
-            }
-
-            @Override
-            public void onPageSelected(int position) {
-                handler.removeCallbacks(runnable);
-                handler.postDelayed(runnable, 3000);
-            }
-
-            @Override
-            public void onPageScrollStateChanged(int state) {
-
-            }
-        });
+        if (viewPager != null) {
+            viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+                @Override
+                public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
+                @Override
+                public void onPageSelected(int position) {
+                    handler.removeCallbacks(runnable);
+                    handler.postDelayed(runnable, 3000);
+                }
+                @Override
+                public void onPageScrollStateChanged(int state) {}
+            });
+        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
         handler.postDelayed(runnable, 3000);
-        UserResponse currentUser = userViewModel.getUser().getValue();
+        UserResponse currentUser = userViewModel != null ? userViewModel.getUser().getValue() : null;
         if (currentUser != null && currentUser.getId() != null) {
-            // Load tasks for today when HomeFragment is resumed
             getListTaskToday(currentUser.getId());
+            if (projectViewModel != null) projectViewModel.fetchProjects(currentUser.getId());
+        } else {
+            getListTaskToday(null);
+            if (projectViewModel != null ) {
+                projectViewModel.clearProjectsLiveData();
+                if (projectAdapter != null) {
+                    projectAdapter.updateData(new ArrayList<>());
+                }
+                if (countGroup != null) {
+                    countGroup.setText("0");
+                }
+            }
         }
     }
 
@@ -310,10 +331,9 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnProjectCl
     }
 
     @Override
-    public void onProjectClick(int projectId) { // Receive Project ID (int)
+    public void onProjectClick(int projectId) {
         if (getActivity() instanceof MainActivity) {
-            // Call the method in MainActivity to navigate and pass the Project ID (int)
-            ((MainActivity) getActivity()).navigateToTasksFragmentWithProject(projectId);
+            ((MainActivity) getActivity()).navigateToProjectFragment(projectId);
         }
     }
 }

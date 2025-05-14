@@ -2,6 +2,7 @@ package com.example.apptodo.adapter;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,27 +11,22 @@ import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.util.Log;
-
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.example.apptodo.R;
-import com.example.apptodo.api.SubTaskService;
 import com.example.apptodo.model.response.SubTaskResponse;
 import com.example.apptodo.model.response.TaskResponse;
-import com.example.apptodo.retrofit.RetrofitClient;
-
+import com.example.apptodo.viewmodel.SubTaskViewModel;
+import com.example.apptodo.viewmodel.TaskViewModel;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import java.util.HashMap;
 
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
 
@@ -38,8 +34,12 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     private OnItemClickListener listener;
     private OnTaskStatusUpdatedListener statusUpdatedListener;
     private Context context;
-    private Map<Integer, Call<List<SubTaskResponse>>> activeCalls = new HashMap<>();
-    private SubTaskService subTaskService;
+    private SubTaskViewModel subTaskViewModel;
+    private TaskViewModel taskViewModel;
+    private LifecycleOwner lifecycleOwner;
+    private Map<Integer, List<SubTaskResponse>> subTaskCache = new HashMap<>();
+    private Map<Integer, Boolean> expansionState = new HashMap<>();
+    private final Map<Integer, Boolean> isProcessing = new HashMap<>();
 
     public interface OnItemClickListener {
         void onItemClick(TaskResponse task);
@@ -49,26 +49,41 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         void onTaskStatusUpdated(int taskId, boolean completed);
     }
 
-    public TaskAdapter(Context context, List<TaskResponse> taskList) {
-        this.context = context;
-        this.taskList = taskList != null ? taskList : new ArrayList<>();
-        this.listener = null;
-        this.statusUpdatedListener = null;
-        this.subTaskService = RetrofitClient.getSubTaskService();
-    }
-
     public TaskAdapter(Context context, List<TaskResponse> taskList, OnItemClickListener listener, OnTaskStatusUpdatedListener statusUpdatedListener) {
         this.context = context;
         this.taskList = taskList != null ? taskList : new ArrayList<>();
         this.listener = listener;
         this.statusUpdatedListener = statusUpdatedListener;
-        this.subTaskService = RetrofitClient.getSubTaskService();
+
+        if (context instanceof FragmentActivity) {
+            FragmentActivity activity = (FragmentActivity) context;
+            this.subTaskViewModel = new ViewModelProvider(activity).get(SubTaskViewModel.class);
+            this.taskViewModel = new ViewModelProvider(activity).get(TaskViewModel.class);
+            this.lifecycleOwner = activity;
+        } else if (context instanceof LifecycleOwner) {
+            this.lifecycleOwner = (LifecycleOwner) context;
+            if (this.lifecycleOwner instanceof FragmentActivity) {
+                FragmentActivity activity = (FragmentActivity) this.lifecycleOwner;
+                this.subTaskViewModel = new ViewModelProvider(activity).get(SubTaskViewModel.class);
+                this.taskViewModel = new ViewModelProvider(activity).get(TaskViewModel.class);
+            }
+        }
     }
 
     @NonNull
     @Override
     public TaskViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         context = parent.getContext();
+        if (subTaskViewModel == null && context instanceof FragmentActivity) {
+            FragmentActivity activity = (FragmentActivity) context;
+            this.subTaskViewModel = new ViewModelProvider(activity).get(SubTaskViewModel.class);
+            this.taskViewModel = new ViewModelProvider(activity).get(TaskViewModel.class);
+            this.lifecycleOwner = activity;
+        } else if (subTaskViewModel == null && lifecycleOwner instanceof FragmentActivity) {
+            FragmentActivity activity = (FragmentActivity) lifecycleOwner;
+            this.subTaskViewModel = new ViewModelProvider(activity).get(SubTaskViewModel.class);
+            this.taskViewModel = new ViewModelProvider(activity).get(TaskViewModel.class);
+        }
         View view = LayoutInflater.from(context).inflate(R.layout.item_tasks, parent, false);
         return new TaskViewHolder(view);
     }
@@ -76,150 +91,113 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     @Override
     public void onBindViewHolder(@NonNull TaskViewHolder holder, int position) {
         TaskResponse task = taskList.get(position);
-        holder.tvNameProject.setText(task.getProject() != null ? task.getProject() : "");
-        holder.tvNameTask.setText(task.getTitle());
-        holder.tvDescTask.setText(task.getDescription());
-        holder.tvDueDate.setText(task.getDueDate() != null && !task.getDueDate().isEmpty() ? task.getDueDate() : "");
-        holder.tvDueTime.setText(task.getReminderTime() != null ? task.getReminderTime().toString() : "No Time");
-        holder.tvNameLabel.setText(task.getLabel() != null ? task.getLabel() : "");
-        holder.statusButton.setChecked(Boolean.TRUE.equals(task.getCompleted()));
+        if (task == null || task.getId() == null) return;
 
-        holder.statusButton.setOnClickListener(null);
-        holder.statusButton.setChecked(Boolean.TRUE.equals(task.getCompleted()));
+        Integer taskId = task.getId();
+        holder.bind(task, expansionState.getOrDefault(taskId, false));
 
         holder.statusButton.setOnClickListener(v -> {
             int currentPosition = holder.getAdapterPosition();
-            if (currentPosition == RecyclerView.NO_POSITION) {
-                return;
-            }
+            if (currentPosition == RecyclerView.NO_POSITION || currentPosition >= taskList.size()) return;
             TaskResponse taskToUpdate = taskList.get(currentPosition);
             boolean isNowChecked = !(Boolean.TRUE.equals(taskToUpdate.getCompleted()));
-
-            if (statusUpdatedListener != null) {
+            if (statusUpdatedListener != null && taskToUpdate.getId() != null) {
                 statusUpdatedListener.onTaskStatusUpdated(taskToUpdate.getId(), isNowChecked);
-
-                taskToUpdate.setCompleted(isNowChecked);
-                holder.statusButton.setChecked(isNowChecked);
-            } else {
-                holder.statusButton.setChecked(Boolean.TRUE.equals(taskToUpdate.getCompleted()));
-                Toast.makeText(context, "Task status listener not set", Toast.LENGTH_SHORT).show();
             }
         });
 
-        final int buttonTintColor;
-
-        switch (task.getPriority().toLowerCase()) {
-            case "high":
-                holder.linearLayout.setBackgroundColor(ContextCompat.getColor(context, R.color.priority_high));
-                holder.imageButton.setBackgroundColor(ContextCompat.getColor(context, R.color.priority_high));
-                holder.btnAddSubTask.setBackgroundColor(ContextCompat.getColor(context, R.color.priority_high));
-                buttonTintColor = ContextCompat.getColor(context, R.color.priority_high_dark);
-                holder.statusButton.setButtonTintList(ColorStateList.valueOf(buttonTintColor));
-                break;
-            case "medium":
-                holder.linearLayout.setBackgroundColor(ContextCompat.getColor(context, R.color.priority_medium));
-                holder.imageButton.setBackgroundColor(ContextCompat.getColor(context, R.color.priority_medium));
-                holder.btnAddSubTask.setBackgroundColor(ContextCompat.getColor(context, R.color.priority_medium));
-                buttonTintColor = ContextCompat.getColor(context, R.color.priority_medium_dark);
-                holder.statusButton.setButtonTintList(ColorStateList.valueOf(buttonTintColor));
-                break;
-            default:
-                holder.linearLayout.setBackgroundColor(ContextCompat.getColor(context, R.color.priority_low));
-                holder.imageButton.setBackgroundColor(ContextCompat.getColor(context, R.color.priority_low));
-                holder.btnAddSubTask.setBackgroundColor(ContextCompat.getColor(context, R.color.priority_low));
-                buttonTintColor = ContextCompat.getColor(context, R.color.priority_low_dark);
-                holder.statusButton.setButtonTintList(ColorStateList.valueOf(buttonTintColor));
-                break;
-        }
-
-        Integer taskId = task.getId();
-        if (taskId != null && activeCalls.containsKey(taskId)) {
-            Call<List<SubTaskResponse>> existingCall = activeCalls.get(taskId);
-            if (existingCall != null) {
-                existingCall.cancel();
-            }
-            activeCalls.remove(taskId);
-        }
-
-        if (taskId != null && subTaskService != null) {
-            Call<List<SubTaskResponse>> call = subTaskService.getSubTasksByTaskId(taskId);
-            activeCalls.put(taskId, call);
-
-            call.enqueue(new Callback<List<SubTaskResponse>>() {
-                @Override
-                public void onResponse(Call<List<SubTaskResponse>> call, Response<List<SubTaskResponse>> response) {
-                    if (taskId != null) {
-                        activeCalls.remove(taskId);
-                    }
-
-                    if (response.isSuccessful() && response.body() != null) {
-                        if (holder.getAdapterPosition() != RecyclerView.NO_POSITION && holder.recyclerViewSubTasks != null) {
-                            SubTaskAdapter subTaskAdapter = new SubTaskAdapter(response.body(), (subTask, isChecked) -> {
-                                // Handle subtask status change here or pass up to Fragment
-                            }, buttonTintColor);
-                            holder.recyclerViewSubTasks.setLayoutManager(new LinearLayoutManager(context));
-                            holder.recyclerViewSubTasks.setAdapter(subTaskAdapter);
-                            holder.recyclerViewSubTasks.setNestedScrollingEnabled(false);
-                        }
-                    } else {
-                        if (holder.getAdapterPosition() != RecyclerView.NO_POSITION && holder.recyclerViewSubTasks != null) {
-                            holder.recyclerViewSubTasks.setAdapter(new SubTaskAdapter(new ArrayList<>(), null, buttonTintColor));
-                        }
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<List<SubTaskResponse>> call, Throwable t) {
-                    if (taskId != null) {
-                        activeCalls.remove(taskId);
-                    }
-                    if (holder.getAdapterPosition() != RecyclerView.NO_POSITION && holder.recyclerViewSubTasks != null) {
-                        holder.recyclerViewSubTasks.setAdapter(new SubTaskAdapter(new ArrayList<>(), null, buttonTintColor));
-                    }
-                }
-            });
-        } else {
-            if (holder.recyclerViewSubTasks != null) {
-                holder.recyclerViewSubTasks.setAdapter(new SubTaskAdapter(new ArrayList<>(), null, buttonTintColor));
-                holder.recyclerViewSubTasks.setVisibility(View.GONE);
-                holder.imageButton.setVisibility(View.GONE);
-            }
-        }
-
         holder.imageButton.setOnClickListener(v -> {
-            if (taskId != null && holder.recyclerViewSubTasks != null) {
-                if (holder.recyclerViewSubTasks.getVisibility() == View.GONE) {
-                    holder.recyclerViewSubTasks.setVisibility(View.VISIBLE);
-                    holder.imageButton.setImageResource(R.drawable.baseline_expand_less_24);
-                } else {
-                    holder.recyclerViewSubTasks.setVisibility(View.GONE);
-                    holder.imageButton.setImageResource(R.drawable.baseline_expand_more_24);
+            boolean isCurrentlyExpanded = expansionState.getOrDefault(taskId, false);
+            boolean newExpandedState = !isCurrentlyExpanded;
+            expansionState.put(taskId, newExpandedState);
+
+            if (newExpandedState) {
+                holder.recyclerViewSubTasks.setVisibility(View.VISIBLE);
+                holder.imageButton.setImageResource(R.drawable.baseline_expand_less_24);
+                if (subTaskViewModel != null) {
+                    subTaskViewModel.loadSubtasksForTask(taskId);
                 }
+            } else {
+                holder.recyclerViewSubTasks.setVisibility(View.GONE);
+                holder.imageButton.setImageResource(R.drawable.baseline_expand_more_24);
             }
         });
 
         holder.itemView.setOnClickListener(v -> {
             int clickedPosition = holder.getAdapterPosition();
-            if (clickedPosition != RecyclerView.NO_POSITION && listener != null) {
+            if (clickedPosition != RecyclerView.NO_POSITION && clickedPosition < taskList.size() && listener != null) {
                 listener.onItemClick(taskList.get(clickedPosition));
             }
         });
+
+        if (lifecycleOwner != null && subTaskViewModel != null && task.getId() != null) {
+            final Integer finalTaskId = taskId; // Sử dụng final để tránh xung đột trong lambda
+            subTaskViewModel.getSubtasks().observe(lifecycleOwner, subTaskResponses -> {
+                if (holder.getAdapterPosition() != RecyclerView.NO_POSITION && holder.getAdapterPosition() < taskList.size()) {
+                    TaskResponse currentTaskForHolder = taskList.get(holder.getAdapterPosition());
+                    Integer currentParentIdInVM = subTaskViewModel.getCurrentParentTaskId();
+                    Log.d("TaskAdapter", "Updating subtasks for task ID: " + currentTaskForHolder.getId() + ", parentId: " + currentParentIdInVM);
+
+                    if (currentParentIdInVM != null && currentTaskForHolder.getId().equals(currentParentIdInVM)) {
+                        holder.subTaskAdapter.setSubTaskList(subTaskResponses);
+                        subTaskCache.put(currentTaskForHolder.getId(), new ArrayList<>(subTaskResponses != null ? subTaskResponses : new ArrayList<>()));
+                        if (expansionState.getOrDefault(currentTaskForHolder.getId(), false)) {
+                            holder.recyclerViewSubTasks.setVisibility(View.VISIBLE);
+                        } else {
+                            holder.recyclerViewSubTasks.setVisibility(View.GONE);
+                        }
+                    }
+                }
+            });
+
+            subTaskViewModel.getErrorMessage().observe(lifecycleOwner, error -> {
+                if (error != null && !error.isEmpty()) {
+                    Log.e("TaskAdapter", "Error: " + error);
+                    Toast.makeText(context, error, Toast.LENGTH_LONG).show();
+                }
+            });
+
+            subTaskViewModel.getSubtaskOperationResult().observe(lifecycleOwner, subTaskOpResult -> {
+                if (holder.getAdapterPosition() != RecyclerView.NO_POSITION && holder.getAdapterPosition() < taskList.size()) {
+                    TaskResponse currentTaskAtEvent = taskList.get(holder.getAdapterPosition());
+                    if (currentTaskAtEvent != null && currentTaskAtEvent.getId() != null) {
+                        Integer parentOfOperatedSubtask = subTaskViewModel.getCurrentParentTaskId();
+                        Log.d("TaskAdapter", "Operation result for task ID: " + currentTaskAtEvent.getId() + ", parentId: " + parentOfOperatedSubtask);
+                        if (parentOfOperatedSubtask != null && parentOfOperatedSubtask.equals(currentTaskAtEvent.getId()) && !isProcessing.getOrDefault(currentTaskAtEvent.getId(), false)) {
+                            isProcessing.put(currentTaskAtEvent.getId(), true);
+                            taskViewModel.getTaskById(currentTaskAtEvent.getId());
+                        }
+                    }
+                }
+            });
+
+            taskViewModel.getSingleTask().observe(lifecycleOwner, updatedTask -> {
+                if (updatedTask != null && updatedTask.getId() != null) {
+                    isProcessing.remove(updatedTask.getId());
+                    Log.d("TaskAdapter", "Task updated: " + updatedTask.getId());
+                }
+            });
+
+            taskViewModel.getErrorMessage().observe(lifecycleOwner, error -> {
+                if (error != null && !error.isEmpty()) {
+                    Log.e("TaskAdapter", "Task error: " + error);
+                    Toast.makeText(context, error, Toast.LENGTH_LONG).show();
+                }
+            });
+        }
     }
 
     @Override
     public void onViewRecycled(@NonNull TaskViewHolder holder) {
         super.onViewRecycled(holder);
-        int position = holder.getAdapterPosition();
-        if (position != RecyclerView.NO_POSITION && position < taskList.size()) {
-            TaskResponse task = taskList.get(position);
-            Integer taskId = task.getId();
-            if (taskId != null && activeCalls.containsKey(taskId)) {
-                Call<List<SubTaskResponse>> existingCall = activeCalls.get(taskId);
-                if (existingCall != null) {
-                    existingCall.cancel();
-                }
-                activeCalls.remove(taskId);
-            }
+        if (lifecycleOwner != null && subTaskViewModel != null) {
+            subTaskViewModel.getSubtasks().removeObservers(lifecycleOwner);
+            subTaskViewModel.getSubtaskOperationResult().removeObservers(lifecycleOwner);
+            subTaskViewModel.getErrorMessage().removeObservers(lifecycleOwner);
+        }
+        if (lifecycleOwner != null && taskViewModel != null) {
+            taskViewModel.getSingleTask().removeObservers(lifecycleOwner);
+            taskViewModel.getErrorMessage().removeObservers(lifecycleOwner);
         }
     }
 
@@ -228,27 +206,34 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         return taskList != null ? taskList.size() : 0;
     }
 
-    public void setTaskList(List<TaskResponse> taskList) {
-        activeCalls.clear();
-        this.taskList = taskList != null ? taskList : new ArrayList<>();
+    public void setTaskList(List<TaskResponse> newTaskList) {
+        this.taskList = newTaskList != null ? new ArrayList<>(newTaskList) : new ArrayList<>();
+        subTaskCache.clear();
+        expansionState.clear();
+        isProcessing.clear();
         notifyDataSetChanged();
     }
 
     public void cleanup() {
-        for (Call<List<SubTaskResponse>> call : activeCalls.values()) {
-            if (call != null) {
-                call.cancel();
-            }
+        if (lifecycleOwner != null && subTaskViewModel != null) {
+            subTaskViewModel.getSubtasks().removeObservers(lifecycleOwner);
+            subTaskViewModel.getSubtaskOperationResult().removeObservers(lifecycleOwner);
+            subTaskViewModel.getErrorMessage().removeObservers(lifecycleOwner);
         }
-        activeCalls.clear();
+        if (lifecycleOwner != null && taskViewModel != null) {
+            taskViewModel.getSingleTask().removeObservers(lifecycleOwner);
+            taskViewModel.getErrorMessage().removeObservers(lifecycleOwner);
+        }
     }
 
-    public static class TaskViewHolder extends RecyclerView.ViewHolder {
+    public class TaskViewHolder extends RecyclerView.ViewHolder {
         TextView tvNameProject, tvNameTask, tvDescTask, tvDueDate, tvDueTime, tvNameLabel;
         RadioButton statusButton;
         ImageButton imageButton, btnAddSubTask;
         RecyclerView recyclerViewSubTasks;
         LinearLayout linearLayout;
+        SubTaskAdapter subTaskAdapter;
+        int buttonTintColor;
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -263,6 +248,63 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             recyclerViewSubTasks = itemView.findViewById(R.id.recyclerViewSubTasks);
             linearLayout = itemView.findViewById(R.id.layoutTask);
             btnAddSubTask = itemView.findViewById(R.id.btnAddSubTask);
+
+            recyclerViewSubTasks.setLayoutManager(new LinearLayoutManager(itemView.getContext()));
+            subTaskAdapter = new SubTaskAdapter(new ArrayList<>(), (subTask, isChecked) -> {
+                if (subTaskViewModel != null && subTask.getId() != null) {
+                    subTaskViewModel.changeSubTaskStatus(subTask.getId(), isChecked);
+                }
+            }, ContextCompat.getColor(itemView.getContext(), R.color.priority_low_dark));
+            recyclerViewSubTasks.setAdapter(subTaskAdapter);
+        }
+
+        void bind(TaskResponse task, boolean isExpanded) {
+            tvNameProject.setText(task.getProject() != null ? task.getProject() : "");
+            tvNameTask.setText(task.getTitle());
+            tvDescTask.setText(task.getDescription());
+            tvDueDate.setText(task.getDueDate() != null && !task.getDueDate().isEmpty() ? task.getDueDate() : "No Due Date");
+            tvDueTime.setText(task.getReminderTime() != null ? task.getReminderTime() : "No Time");
+            tvNameLabel.setText(task.getLabel() != null ? task.getLabel() : "");
+            statusButton.setChecked(Boolean.TRUE.equals(task.getCompleted()));
+
+            String priority = task.getPriority() != null ? task.getPriority().toLowerCase() : "low";
+            switch (priority) {
+                case "high":
+                    linearLayout.setBackgroundColor(ContextCompat.getColor(itemView.getContext(), R.color.priority_high));
+                    imageButton.setBackgroundColor(ContextCompat.getColor(itemView.getContext(), R.color.priority_high));
+                    btnAddSubTask.setBackgroundColor(ContextCompat.getColor(itemView.getContext(), R.color.priority_high));
+                    buttonTintColor = ContextCompat.getColor(itemView.getContext(), R.color.priority_high_dark);
+                    break;
+                case "medium":
+                    linearLayout.setBackgroundColor(ContextCompat.getColor(itemView.getContext(), R.color.priority_medium));
+                    imageButton.setBackgroundColor(ContextCompat.getColor(itemView.getContext(), R.color.priority_medium));
+                    btnAddSubTask.setBackgroundColor(ContextCompat.getColor(itemView.getContext(), R.color.priority_medium));
+                    buttonTintColor = ContextCompat.getColor(itemView.getContext(), R.color.priority_medium_dark);
+                    break;
+                default:
+                    linearLayout.setBackgroundColor(ContextCompat.getColor(itemView.getContext(), R.color.priority_low));
+                    imageButton.setBackgroundColor(ContextCompat.getColor(itemView.getContext(), R.color.priority_low));
+                    btnAddSubTask.setBackgroundColor(ContextCompat.getColor(itemView.getContext(), R.color.priority_low));
+                    buttonTintColor = ContextCompat.getColor(itemView.getContext(), R.color.priority_low_dark);
+                    break;
+            }
+            statusButton.setButtonTintList(ColorStateList.valueOf(buttonTintColor));
+            subTaskAdapter.setParentTaskButtonColor(buttonTintColor);
+
+            imageButton.setVisibility(View.VISIBLE);
+
+            if (isExpanded) {
+                imageButton.setImageResource(R.drawable.baseline_expand_less_24);
+                recyclerViewSubTasks.setVisibility(View.VISIBLE);
+                if (task.getId() != null && subTaskCache.containsKey(task.getId())) {
+                    subTaskAdapter.setSubTaskList(subTaskCache.get(task.getId()));
+                } else if (task.getId() != null && subTaskViewModel != null) {
+                    subTaskViewModel.loadSubtasksForTask(task.getId());
+                }
+            } else {
+                imageButton.setImageResource(R.drawable.baseline_expand_more_24);
+                recyclerViewSubTasks.setVisibility(View.GONE);
+            }
         }
     }
 }
