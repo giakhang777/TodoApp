@@ -7,6 +7,11 @@
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" /> <!-- Quyền thay đổi trạng thái Wi-Fi -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SET_ALARM"/>
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+
+
 
     <application
         android:allowBackup="true"
@@ -19,6 +24,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BottomNavigationDemo"
         tools:targetApi="31">
+        <receiver android:name=".alarm.DailyReminderReceiver" android:enabled="true" android:exported="true"/>
+        <receiver android:name=".alarm.TaskReminderReceiver" android:enabled="true" android:exported="true"/>
+
+
 
         <activity
             android:name=".activity.SignUpActivity"

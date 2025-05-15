@@ -1,17 +1,32 @@
 package com.example.apptodo.viewmodel;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
 import android.util.Log;
+import android.widget.Toast;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
+
+import com.example.apptodo.alarm.TaskReminderReceiver;
 import com.example.apptodo.api.TaskService;
 import com.example.apptodo.model.request.TaskRequest;
 import com.example.apptodo.model.response.TaskResponse;
 import com.example.apptodo.retrofit.RetrofitClient;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import java.util.Locale;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -122,7 +137,8 @@ public class TaskViewModel extends ViewModel {
             @Override
             public void onResponse(Call<TaskResponse> call, Response<TaskResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    getTaskById(taskId); // Quan trọng: Lấy lại task sau khi thay đổi trạng thái
+                    taskOperationResult.setValue(response.body());
+                    getTaskById(taskId);
                 } else {
                     errorMessage.setValue("Failed to change task status: " + response.code() + " - " + response.message());
                 }
@@ -178,8 +194,8 @@ public class TaskViewModel extends ViewModel {
             @Override
             public void onResponse(Call<TaskResponse> call, Response<TaskResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    // taskOperationResult.setValue(response.body()); // Không dùng cái này nữa
-                    getTaskById(taskId); // Lấy lại task sau khi cập nhật để xử lý logic
+                    taskOperationResult.setValue(response.body());
+                    getTaskById(taskId);
                 } else {
                     errorMessage.setValue("Failed to update task: " + response.code() + " - " + response.message());
                 }
@@ -206,7 +222,6 @@ public class TaskViewModel extends ViewModel {
                     TaskResponse updatedTask = response.body();
                     singleTaskLiveData.setValue(updatedTask); // Cập nhật LiveData cho task đơn lẻ
 
-                    // Cập nhật task này trong danh sách tasksLiveData
                     List<TaskResponse> currentTasks = tasksLiveData.getValue();
                     if (currentTasks != null) {
                         List<TaskResponse> newTaskList = new ArrayList<>(currentTasks);
@@ -220,9 +235,6 @@ public class TaskViewModel extends ViewModel {
                         }
                         if (found) {
                             tasksLiveData.setValue(newTaskList);
-                        } else {
-                            // Nếu không tìm thấy (ví dụ task mới được lấy về), thêm vào
-                            // Hoặc load lại toàn bộ danh sách nếu logic yêu cầu
                         }
                     } else {
                         // Nếu tasksLiveData là null, có thể khởi tạo và thêm task vào
@@ -230,34 +242,12 @@ public class TaskViewModel extends ViewModel {
                         newTaskList.add(updatedTask);
                         tasksLiveData.setValue(newTaskList);
                     }
-
-
-                    // THỰC HIỆN LOGIC TỰ ĐỘNG HOÀN THÀNH TASK CHA
-                    if (updatedTask.getTotalSubTasks() > 0) {
-                        boolean allSubTasksCompleted = updatedTask.getCompletedSubTasks() == updatedTask.getTotalSubTasks();
-                        if (allSubTasksCompleted && !Boolean.TRUE.equals(updatedTask.getCompleted())) {
-                            Log.d("TaskViewModel", "All subtasks completed for task ID " + taskId + ". Auto-completing parent task.");
-                            isAutoUpdatingStatus.put(taskId, true); // Đặt cờ trước khi gọi
-                            changeTaskStatus(taskId, true);
-                        } else if (!allSubTasksCompleted && Boolean.TRUE.equals(updatedTask.getCompleted())) {
-                            // Trường hợp: Task cha đang hoàn thành, nhưng không phải tất cả subtask đều hoàn thành
-                            // (ví dụ: người dùng bỏ check 1 subtask)
-                            Log.d("TaskViewModel", "Not all subtasks completed for task ID " + taskId + ". Auto-uncompleting parent task.");
-                            isAutoUpdatingStatus.put(taskId, true); // Đặt cờ trước khi gọi
-                            changeTaskStatus(taskId, false);
-                        }
-                    }
-                    // Sau khi xử lý logic tự động, thông báo taskOperationResult để UI (ví dụ: TaskAdapter) biết rằng task đã được xử lý
-                    // và có thể cần cập nhật lại (ví dụ: reload subtask nếu task cha được mở rộng)
-                    // Điều này rất quan trọng để TaskAdapter biết rằng getTaskById đã hoàn tất và có thể an toàn để thực hiện các hành động tiếp theo.
-                    taskOperationResult.setValue(updatedTask);
-
-
                 } else {
                     singleTaskLiveData.setValue(null);
                     String errorMsg = "Failed to get task details: " + response.code() + " - " + response.message();
                     errorMessage.setValue(errorMsg);
                     Log.e("TaskViewModel", "Failed to get task details for ID " + taskId + ": " + errorMsg);
+                    loadAllTasks(1); // Replace with real userId
                 }
             }
 
@@ -268,6 +258,67 @@ public class TaskViewModel extends ViewModel {
                 Log.e("TaskViewModel", "API failure for task ID " + taskId + ": " + t.getMessage());
             }
         });
+    }
+
+    public void scheduleTaskReminders(List<TaskResponse> tasks, Context context) {
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (!alarmManager.canScheduleExactAlarms()) {
+                Toast.makeText(context, "App cannot schedule exact alarms. Please grant permission.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
+        for (TaskResponse task : tasks) {
+            if (task.getReminder() != null && task.getReminder() && task.getReminderTime() != null) {
+                String reminderTimeStr = task.getReminderTimeFormated();
+                long reminderTime = parseReminderTime(reminderTimeStr);
+
+                if (reminderTime != -1) {
+                    setTaskReminder(reminderTime, task.getTitle(), task.getId(), context);
+                }
+            }
+        }
+    }
+
+    private void setTaskReminder(long reminderTime, String taskTitle, int taskId, Context context) {
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+
+        Intent intent = new Intent(context, TaskReminderReceiver.class);
+        intent.putExtra("taskTitle", taskTitle);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                context, taskId, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    reminderTime,
+                    pendingIntent
+            );
+        } else {
+            alarmManager.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    reminderTime,
+                    pendingIntent
+            );
+        }
+
+        Log.d("TaskReminder", "Reminder set for task: " + taskTitle + " at: " + new Date(reminderTime));
+    }
+
+    private long parseReminderTime(String reminderTimeStr) {
+        try {
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
+            Date reminderDate = formatter.parse(reminderTimeStr);
+            if (reminderDate != null) {
+                return reminderDate.getTime();
+            }
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return -1;
     }
 
     public void clearTasksLiveData() {
