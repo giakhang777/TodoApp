@@ -1,15 +1,30 @@
 package com.example.apptodo.viewmodel;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
 import android.util.Log;
+import android.widget.Toast;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
+
+import com.example.apptodo.alarm.TaskReminderReceiver;
 import com.example.apptodo.api.TaskService;
 import com.example.apptodo.model.request.TaskRequest;
 import com.example.apptodo.model.response.TaskResponse;
 import com.example.apptodo.retrofit.RetrofitClient;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -108,7 +123,7 @@ public class TaskViewModel extends ViewModel {
             public void onResponse(Call<TaskResponse> call, Response<TaskResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     taskOperationResult.setValue(response.body());
-                    getTaskById(taskId); // Làm mới task sau khi cập nhật trạng thái
+                    getTaskById(taskId);
                 } else {
                     errorMessage.setValue("Failed to change task status: " + response.code() + " - " + response.message());
                 }
@@ -163,7 +178,7 @@ public class TaskViewModel extends ViewModel {
             public void onResponse(Call<TaskResponse> call, Response<TaskResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     taskOperationResult.setValue(response.body());
-                    getTaskById(taskId); // Làm mới task sau khi cập nhật
+                    getTaskById(taskId);
                 } else {
                     errorMessage.setValue("Failed to update task: " + response.code() + " - " + response.message());
                 }
@@ -210,8 +225,7 @@ public class TaskViewModel extends ViewModel {
                     String errorMsg = "Failed to get task details: " + response.code() + " - " + response.message();
                     errorMessage.setValue(errorMsg);
                     Log.e("TaskViewModel", "Failed to get task details for ID " + taskId + ": " + errorMsg);
-                    // Làm mới danh sách task nếu không tìm thấy
-                    loadAllTasks(1); // Thay 1 bằng userId thực tế
+                    loadAllTasks(1); // Replace with real userId
                 }
             }
 
@@ -222,6 +236,67 @@ public class TaskViewModel extends ViewModel {
                 Log.e("TaskViewModel", "API failure for task ID " + taskId + ": " + t.getMessage());
             }
         });
+    }
+
+    public void scheduleTaskReminders(List<TaskResponse> tasks, Context context) {
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (!alarmManager.canScheduleExactAlarms()) {
+                Toast.makeText(context, "App cannot schedule exact alarms. Please grant permission.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
+        for (TaskResponse task : tasks) {
+            if (task.getReminder() != null && task.getReminder() && task.getReminderTime() != null) {
+                String reminderTimeStr = task.getReminderTimeFormated();
+                long reminderTime = parseReminderTime(reminderTimeStr);
+
+                if (reminderTime != -1) {
+                    setTaskReminder(reminderTime, task.getTitle(), task.getId(), context);
+                }
+            }
+        }
+    }
+
+    private void setTaskReminder(long reminderTime, String taskTitle, int taskId, Context context) {
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+
+        Intent intent = new Intent(context, TaskReminderReceiver.class);
+        intent.putExtra("taskTitle", taskTitle);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                context, taskId, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    reminderTime,
+                    pendingIntent
+            );
+        } else {
+            alarmManager.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    reminderTime,
+                    pendingIntent
+            );
+        }
+
+        Log.d("TaskReminder", "Reminder set for task: " + taskTitle + " at: " + new Date(reminderTime));
+    }
+
+    private long parseReminderTime(String reminderTimeStr) {
+        try {
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
+            Date reminderDate = formatter.parse(reminderTimeStr);
+            if (reminderDate != null) {
+                return reminderDate.getTime();
+            }
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return -1;
     }
 
     public void clearTasksLiveData() {

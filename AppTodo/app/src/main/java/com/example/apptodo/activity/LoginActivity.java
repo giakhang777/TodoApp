@@ -120,7 +120,8 @@ public class LoginActivity extends AppCompatActivity {
             editor.putBoolean("isLoggedIn", true);
             editor.putBoolean("rememberMeChecked", true);
             editor.putString("username", username);
-            editor.putString("password", password);  // Lưu password (cẩn thận khi lưu password)
+            editor.putString("password", password);
+            editor.putInt("userId", userResponse.getId());
             editor.putString("user_data", userResponse.getUsername());
             editor.apply();
         }
