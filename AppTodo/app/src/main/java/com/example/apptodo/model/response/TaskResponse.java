@@ -51,7 +51,9 @@ public class TaskResponse extends BaseModel {
     public void setCompletedSubTasks(int completedSubTasks) {
         this.completedSubTasks = completedSubTasks;
     }
-
+    public String getReminderTimeFormated() {
+        return reminderTime;
+    }
     // Getter và Setter cho reminderTime
     public String getReminderTime() {
         if (reminderTime != null && !reminderTime.isEmpty()) {

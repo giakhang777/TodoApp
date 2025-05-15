@@ -42,7 +42,7 @@ public class LabelFragment extends Fragment {
         labelAdapter = new LabelAdapter(getContext(), labelList);
         labelListView.setAdapter(labelAdapter);
 
-        labelViewModel = new ViewModelProvider(this).get(LabelViewModel.class);
+        labelViewModel = new ViewModelProvider(requireActivity()).get(LabelViewModel.class); // Chia sẻ ViewModel
         sharedUserViewModel = new ViewModelProvider(requireActivity()).get(SharedUserViewModel.class);
 
         sharedUserViewModel.getUser().observe(getViewLifecycleOwner(), userResponse -> {
