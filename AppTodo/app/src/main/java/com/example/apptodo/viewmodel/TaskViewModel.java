@@ -21,8 +21,11 @@ import com.example.apptodo.retrofit.RetrofitClient;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+
 import java.util.Locale;
 
 import retrofit2.Call;
@@ -36,6 +39,10 @@ public class TaskViewModel extends ViewModel {
     private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
     private final MutableLiveData<TaskResponse> taskOperationResult = new MutableLiveData<>();
     private final MutableLiveData<TaskResponse> singleTaskLiveData = new MutableLiveData<>();
+
+    // Biến cờ để tránh gọi changeTaskStatus lặp lại không cần thiết
+    private final Map<Integer, Boolean> isAutoUpdatingStatus = new HashMap<>();
+
 
     public TaskViewModel() {
         taskService = RetrofitClient.getTaskService();
@@ -118,6 +125,14 @@ public class TaskViewModel extends ViewModel {
     }
 
     public void changeTaskStatus(int taskId, boolean completed) {
+        // Kiểm tra xem có phải đang tự động cập nhật không để tránh vòng lặp
+        if (isAutoUpdatingStatus.getOrDefault(taskId, false)) {
+            Log.d("TaskViewModel", "Skipping changeTaskStatus for task ID " + taskId + " due to auto-update flag.");
+            isAutoUpdatingStatus.remove(taskId); // Reset cờ sau khi kiểm tra
+            return;
+        }
+
+        Log.d("TaskViewModel", "Manually changing task status for ID " + taskId + " to " + completed);
         taskService.changeTaskStatus(taskId, completed).enqueue(new Callback<TaskResponse>() {
             @Override
             public void onResponse(Call<TaskResponse> call, Response<TaskResponse> response) {
@@ -141,7 +156,8 @@ public class TaskViewModel extends ViewModel {
             @Override
             public void onResponse(Call<TaskResponse> call, Response<TaskResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    taskOperationResult.setValue(response.body());
+                    taskOperationResult.setValue(response.body()); // Giữ lại để thông báo tạo task thành công
+                    // Sau khi tạo, có thể cần load lại danh sách task chung
                 } else {
                     errorMessage.setValue("Failed to create task: " + response.code() + " - " + response.message());
                 }
@@ -159,7 +175,8 @@ public class TaskViewModel extends ViewModel {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
-                    taskOperationResult.setValue(null);
+                    taskOperationResult.setValue(null); // Sử dụng null để báo hiệu xóa thành công
+                    // Load lại danh sách task sau khi xóa
                 } else {
                     errorMessage.setValue("Failed to delete task: " + response.code() + " - " + response.message());
                 }
@@ -203,7 +220,7 @@ public class TaskViewModel extends ViewModel {
                 Log.d("TaskViewModel", "Response for task ID " + taskId + ": " + response.code() + " - " + response.message());
                 if (response.isSuccessful() && response.body() != null) {
                     TaskResponse updatedTask = response.body();
-                    singleTaskLiveData.setValue(updatedTask);
+                    singleTaskLiveData.setValue(updatedTask); // Cập nhật LiveData cho task đơn lẻ
 
                     List<TaskResponse> currentTasks = tasksLiveData.getValue();
                     if (currentTasks != null) {
@@ -219,6 +236,11 @@ public class TaskViewModel extends ViewModel {
                         if (found) {
                             tasksLiveData.setValue(newTaskList);
                         }
+                    } else {
+                        // Nếu tasksLiveData là null, có thể khởi tạo và thêm task vào
+                        List<TaskResponse> newTaskList = new ArrayList<>();
+                        newTaskList.add(updatedTask);
+                        tasksLiveData.setValue(newTaskList);
                     }
                 } else {
                     singleTaskLiveData.setValue(null);

@@ -10,7 +10,7 @@
         android:id="@+id/tv_dialog_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Add Sub Task"
+        android:text="Sub Task"
         android:textSize="22sp"
         android:textStyle="bold"
         android:textColor="@color/black"
@@ -19,7 +19,7 @@
 
 
     <EditText
-        android:id="@+id/et_label_name"
+        android:id="@+id/et_subtask_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Sub Task Name"
