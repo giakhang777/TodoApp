@@ -1,16 +1,30 @@
 package com.example.apptodo.viewmodel;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
+import android.util.Log;
+import android.widget.Toast;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.apptodo.alarm.DailyReminderReceiver;
+import com.example.apptodo.alarm.TaskReminderReceiver;
 import com.example.apptodo.api.TaskService;
 import com.example.apptodo.model.request.TaskRequest;
 import com.example.apptodo.model.response.TaskResponse;
 import com.example.apptodo.retrofit.RetrofitClient;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -201,4 +215,74 @@ public class TaskViewModel extends ViewModel {
             }
         });
     }
+    public void scheduleTaskReminders(List<TaskResponse> tasks, Context context) {
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+
+        // Check if we have permission to schedule exact alarms (only for Android 12+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (!alarmManager.canScheduleExactAlarms()) {
+                // If the app can't schedule exact alarms, show a message to the user
+                Toast.makeText(context, "App cannot schedule exact alarms. Please grant permission.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
+        for (TaskResponse task : tasks) {
+            if (task.getReminder() != null && task.getReminder() && task.getReminderTime() != null) {
+                String reminderTimeStr = task.getReminderTimeFormated();
+                long reminderTime = parseReminderTime(reminderTimeStr);
+
+                if (reminderTime != -1) {
+                    // Lập lịch cho mỗi task có reminder
+                    setTaskReminder(reminderTime, task.getTitle(), task.getId(), context);
+                }
+            }
+        }
+    }
+
+    private void setTaskReminder(long reminderTime, String taskTitle, int taskId, Context context) {
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+
+        // Create an Intent to trigger the DailyReminderReceiver
+        Intent intent = new Intent(context, TaskReminderReceiver.class);
+        intent.putExtra("taskTitle", taskTitle);  // Pass task title into the Intent
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                context, taskId, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        // Schedule the alarm only if exact alarms are allowed
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    reminderTime,
+                    pendingIntent
+            );
+        } else {
+            alarmManager.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    reminderTime,
+                    pendingIntent
+            );
+        }
+
+        Log.d("TaskReminder", "Reminder set for task: " + taskTitle + " at: " + new Date(reminderTime));
+    }
+
+    private long parseReminderTime(String reminderTimeStr) {
+        try {
+            // Định dạng đúng của reminderTime: "2025-05-15T15:00:00"
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
+            Date reminderDate = formatter.parse(reminderTimeStr);
+
+            if (reminderDate != null) {
+                return reminderDate.getTime();  // Trả về time dạng milliseconds
+            }
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return -1; // Nếu không parse được thì trả về -1
+    }
+
+
+
 }

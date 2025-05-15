@@ -1,11 +1,20 @@
 package com.example.apptodo.activity;
 
+import android.Manifest;
+import android.app.AlarmManager;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
+import android.app.PendingIntent;
 import android.app.TimePickerDialog;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,7 +25,10 @@ import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -24,6 +36,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.apptodo.R;
 import com.example.apptodo.adapter.TaskAdapter;
+import com.example.apptodo.alarm.DailyReminderReceiver;
 import com.example.apptodo.databinding.ActivityMainBinding;
 import com.example.apptodo.model.UserResponse;
 import com.example.apptodo.model.request.TaskRequest;
@@ -63,6 +76,36 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnIte
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+
+        // Kiểm tra quyền "Schedule Exact Alarms" từ Android 12 (API level 31)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+            if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
+                // Nếu không có quyền lên lịch báo thức chính xác, yêu cầu quyền từ người dùng
+                Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+                startActivity(intent);
+                return; // Đợi người dùng cấp quyền và gọi lại mã tiếp theo sau
+            }
+        }
+
+        // Kiểm tra và yêu cầu quyền "POST_NOTIFICATIONS" từ Android 13 (API level 33) trở lên
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                // Yêu cầu quyền nếu chưa được cấp
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
+            } else {
+                // Nếu quyền đã được cấp, có thể gửi thông báo
+            //    testNotificationNow();
+                scheduleDailyReminder();
+            }
+        } else {
+            // Trên các phiên bản Android trước Android 13, không cần yêu cầu quyền này
+         //   testNotificationNow();
+            scheduleDailyReminder();
+        }
 
         sharedUserViewModel = new ViewModelProvider(this).get(SharedUserViewModel.class);
         UserResponse user = (UserResponse) getIntent().getSerializableExtra("user");
@@ -131,13 +174,36 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnIte
                 taskDialog.dismiss();
             }
         });
+        taskViewModel.getTasks().observe(this, tasks -> {
+            if (tasks != null && !tasks.isEmpty()) {
+                // Gọi phương thức để lập lịch nhắc nhở cho các task đã tải về
+                taskViewModel.scheduleTaskReminders(tasks, this);  // Truyền context vào đây
+            }
+        });
 
         taskViewModel.getErrorMessage().observe(this, errorMessage -> {
             if (errorMessage != null && !errorMessage.isEmpty()) {
                 Toast.makeText(this, "Task error: " + errorMessage, Toast.LENGTH_SHORT).show();
             }
         });
+
+
     }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == 1) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Quyền đã được cấp -> Gọi lại hai hàm
+             //   testNotificationNow();
+                scheduleDailyReminder();
+            } else {
+                Toast.makeText(this, "Ứng dụng cần quyền để hiển thị thông báo", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
 
     public void navigateToTasksFragmentWithProject(int projectId) {
         TasksFragment tasksFragment = TasksFragment.newInstance(projectId);
@@ -570,6 +636,34 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnIte
             taskDialog.getWindow().setGravity(Gravity.BOTTOM);
         }
     }
+
+    private void scheduleDailyReminder() {
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(this, DailyReminderReceiver.class);  // receiver của bạn
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY,7);
+        calendar.set(Calendar.MINUTE, 30);
+        calendar.set(Calendar.SECOND, 0);
+
+        if (Calendar.getInstance().after(calendar)) {
+            calendar.add(Calendar.DAY_OF_YEAR, 1); // Nếu đã qua 7h, đặt lịch cho ngày hôm sau
+        }
+        Log.d("TimeNow", new Date().toString());
+        Log.d("TestNotification", "Alarm set for: " + calendar.getTime());
+        // Đặt lịch báo thức (AlarmManager) lặp lại mỗi ngày lúc 7h sáng
+        alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                calendar.getTimeInMillis(),
+                pendingIntent
+        );
+    }
+
+
+
 
     @Override
     public void onItemClick(TaskResponse task) {
