@@ -123,7 +123,6 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnIte
             if (currentUser != null && currentUser.getId() != null) {
                 String today = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Calendar.getInstance().getTime());
                 taskViewModel.loadTasksByDate(today, currentUser.getId());
-                taskViewModel.loadAllTasks(currentUser.getId());
             }
             if (taskDialog != null && taskDialog.isShowing()) {
                 taskDialog.dismiss();
