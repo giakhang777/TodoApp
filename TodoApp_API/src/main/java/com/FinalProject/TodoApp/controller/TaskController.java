@@ -30,7 +30,7 @@ public class TaskController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getTaskById(@Valid @PathVariable Integer id) {
+    public ResponseEntity<?> getTaskById(@PathVariable Integer id) {
         try {
             TaskResponseDTO task = taskService.getTaskById(id);
             return ResponseEntity.ok(task);
@@ -40,7 +40,7 @@ public class TaskController {
     }
 
     @GetMapping("/project/{projectId}")
-    public ResponseEntity<?> getTasksByProject(@Valid @PathVariable Integer projectId) {
+    public ResponseEntity<?> getTasksByProject(@PathVariable Integer projectId) {
         try {
             List<TaskResponseDTO> tasks = taskService.getTasksByProjectId(projectId);
             return ResponseEntity.ok(tasks);

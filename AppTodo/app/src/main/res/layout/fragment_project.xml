@@ -18,51 +18,12 @@
             android:id="@+id/projectTitleTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Search"
+            android:text="Project Detail"
             android:textSize="28sp"
-            android:textColor="@color/lavender"
+            android:textColor="@color/black"
             android:layout_gravity="center"
             android:textStyle="bold"
             android:layout_marginBottom="10dp"/>
-
-        <LinearLayout
-            android:id="@+id/search_bar_layout"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp">
-
-            <ImageView
-                android:id="@+id/imgSearch"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_marginEnd="8dp"
-                android:src="@drawable/search"
-                app:tint="@color/lavender" />
-
-            <EditText
-                android:id="@+id/editSearch"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="@android:color/transparent"
-                android:hint="Type here..."
-                android:inputType="text"
-                android:paddingStart="8dp"
-                android:textColor="@color/black"
-                android:textSize="16sp" />
-
-            <Button
-                android:id="@+id/btnCancelSearch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="CANCEL"
-                android:backgroundTint="@color/lavender"
-                android:textColor="@android:color/white"
-                android:visibility="gone"/>
-        </LinearLayout>
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView

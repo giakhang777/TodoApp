@@ -12,7 +12,6 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import com.example.apptodo.alarm.DailyReminderReceiver;
 import com.example.apptodo.alarm.TaskReminderReceiver;
 import com.example.apptodo.api.TaskService;
 import com.example.apptodo.model.request.TaskRequest;
@@ -33,15 +32,10 @@ import retrofit2.Response;
 public class TaskViewModel extends ViewModel {
 
     private final TaskService taskService;
-
     private final MutableLiveData<List<TaskResponse>> tasksLiveData = new MutableLiveData<>();
-
     private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
-
     private final MutableLiveData<TaskResponse> taskOperationResult = new MutableLiveData<>();
-
     private final MutableLiveData<TaskResponse> singleTaskLiveData = new MutableLiveData<>();
-
 
     public TaskViewModel() {
         taskService = RetrofitClient.getTaskService();
@@ -63,7 +57,6 @@ public class TaskViewModel extends ViewModel {
         return singleTaskLiveData;
     }
 
-
     public void loadAllTasks(int userId) {
         taskService.getTasksByUser(userId).enqueue(new Callback<List<TaskResponse>>() {
             @Override
@@ -72,7 +65,7 @@ public class TaskViewModel extends ViewModel {
                     tasksLiveData.setValue(response.body());
                 } else {
                     tasksLiveData.setValue(new ArrayList<>());
-                    errorMessage.setValue("Failed to load tasks: " + response.message());
+                    errorMessage.setValue("Failed to load tasks: " + response.code() + " - " + response.message());
                 }
             }
 
@@ -92,6 +85,7 @@ public class TaskViewModel extends ViewModel {
                     tasksLiveData.setValue(response.body());
                 } else {
                     tasksLiveData.setValue(new ArrayList<>());
+                    errorMessage.setValue("Failed to load tasks for date: " + response.code() + " - " + response.message());
                 }
             }
 
@@ -111,7 +105,7 @@ public class TaskViewModel extends ViewModel {
                     tasksLiveData.setValue(response.body());
                 } else {
                     tasksLiveData.setValue(new ArrayList<>());
-                    errorMessage.setValue("Failed to load tasks for project: " + response.message());
+                    errorMessage.setValue("Failed to load tasks for project: " + response.code() + " - " + response.message());
                 }
             }
 
@@ -123,15 +117,15 @@ public class TaskViewModel extends ViewModel {
         });
     }
 
-
     public void changeTaskStatus(int taskId, boolean completed) {
         taskService.changeTaskStatus(taskId, completed).enqueue(new Callback<TaskResponse>() {
             @Override
             public void onResponse(Call<TaskResponse> call, Response<TaskResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     taskOperationResult.setValue(response.body());
+                    getTaskById(taskId);
                 } else {
-                    errorMessage.setValue("Failed to change task status: " + response.message());
+                    errorMessage.setValue("Failed to change task status: " + response.code() + " - " + response.message());
                 }
             }
 
@@ -149,7 +143,7 @@ public class TaskViewModel extends ViewModel {
                 if (response.isSuccessful() && response.body() != null) {
                     taskOperationResult.setValue(response.body());
                 } else {
-                    errorMessage.setValue("Failed to create task: " + response.message());
+                    errorMessage.setValue("Failed to create task: " + response.code() + " - " + response.message());
                 }
             }
 
@@ -167,7 +161,7 @@ public class TaskViewModel extends ViewModel {
                 if (response.isSuccessful()) {
                     taskOperationResult.setValue(null);
                 } else {
-                    errorMessage.setValue("Failed to delete task: " + response.message());
+                    errorMessage.setValue("Failed to delete task: " + response.code() + " - " + response.message());
                 }
             }
 
@@ -184,8 +178,9 @@ public class TaskViewModel extends ViewModel {
             public void onResponse(Call<TaskResponse> call, Response<TaskResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     taskOperationResult.setValue(response.body());
+                    getTaskById(taskId);
                 } else {
-                    errorMessage.setValue("Failed to update task: " + response.message());
+                    errorMessage.setValue("Failed to update task: " + response.code() + " - " + response.message());
                 }
             }
 
@@ -197,14 +192,40 @@ public class TaskViewModel extends ViewModel {
     }
 
     public void getTaskById(int taskId) {
+        Log.d("TaskViewModel", "Getting task by ID: " + taskId);
+        if (taskId <= 0) {
+            errorMessage.setValue("Invalid task ID: " + taskId);
+            return;
+        }
         taskService.getTaskById(taskId).enqueue(new Callback<TaskResponse>() {
             @Override
             public void onResponse(Call<TaskResponse> call, Response<TaskResponse> response) {
+                Log.d("TaskViewModel", "Response for task ID " + taskId + ": " + response.code() + " - " + response.message());
                 if (response.isSuccessful() && response.body() != null) {
-                    singleTaskLiveData.setValue(response.body());
+                    TaskResponse updatedTask = response.body();
+                    singleTaskLiveData.setValue(updatedTask);
+
+                    List<TaskResponse> currentTasks = tasksLiveData.getValue();
+                    if (currentTasks != null) {
+                        List<TaskResponse> newTaskList = new ArrayList<>(currentTasks);
+                        boolean found = false;
+                        for (int i = 0; i < newTaskList.size(); i++) {
+                            if (newTaskList.get(i).getId() != null && newTaskList.get(i).getId().equals(taskId)) {
+                                newTaskList.set(i, updatedTask);
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found) {
+                            tasksLiveData.setValue(newTaskList);
+                        }
+                    }
                 } else {
                     singleTaskLiveData.setValue(null);
-                    errorMessage.setValue("Failed to get task details: " + response.message());
+                    String errorMsg = "Failed to get task details: " + response.code() + " - " + response.message();
+                    errorMessage.setValue(errorMsg);
+                    Log.e("TaskViewModel", "Failed to get task details for ID " + taskId + ": " + errorMsg);
+                    loadAllTasks(1); // Replace with real userId
                 }
             }
 
@@ -212,16 +233,16 @@ public class TaskViewModel extends ViewModel {
             public void onFailure(Call<TaskResponse> call, Throwable t) {
                 singleTaskLiveData.setValue(null);
                 errorMessage.setValue("Error getting task details: " + t.getMessage());
+                Log.e("TaskViewModel", "API failure for task ID " + taskId + ": " + t.getMessage());
             }
         });
     }
+
     public void scheduleTaskReminders(List<TaskResponse> tasks, Context context) {
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 
-        // Check if we have permission to schedule exact alarms (only for Android 12+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (!alarmManager.canScheduleExactAlarms()) {
-                // If the app can't schedule exact alarms, show a message to the user
                 Toast.makeText(context, "App cannot schedule exact alarms. Please grant permission.", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -233,7 +254,6 @@ public class TaskViewModel extends ViewModel {
                 long reminderTime = parseReminderTime(reminderTimeStr);
 
                 if (reminderTime != -1) {
-                    // Lập lịch cho mỗi task có reminder
                     setTaskReminder(reminderTime, task.getTitle(), task.getId(), context);
                 }
             }
@@ -243,14 +263,12 @@ public class TaskViewModel extends ViewModel {
     private void setTaskReminder(long reminderTime, String taskTitle, int taskId, Context context) {
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 
-        // Create an Intent to trigger the DailyReminderReceiver
         Intent intent = new Intent(context, TaskReminderReceiver.class);
-        intent.putExtra("taskTitle", taskTitle);  // Pass task title into the Intent
+        intent.putExtra("taskTitle", taskTitle);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 context, taskId, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        // Schedule the alarm only if exact alarms are allowed
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             alarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
@@ -270,19 +288,18 @@ public class TaskViewModel extends ViewModel {
 
     private long parseReminderTime(String reminderTimeStr) {
         try {
-            // Định dạng đúng của reminderTime: "2025-05-15T15:00:00"
             SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
             Date reminderDate = formatter.parse(reminderTimeStr);
-
             if (reminderDate != null) {
-                return reminderDate.getTime();  // Trả về time dạng milliseconds
+                return reminderDate.getTime();
             }
         } catch (ParseException e) {
             e.printStackTrace();
         }
-        return -1; // Nếu không parse được thì trả về -1
+        return -1;
     }
 
-
-
+    public void clearTasksLiveData() {
+        tasksLiveData.setValue(new ArrayList<>());
+    }
 }

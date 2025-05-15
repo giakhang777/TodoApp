@@ -69,8 +69,6 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnIte
 
     private Dialog taskDialog;
 
-    public static final String ARG_PROJECT_ID = "projectId";
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -134,20 +132,20 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnIte
         });
 
         if (savedInstanceState == null) {
-            replaceFragment(new HomeFragment());
+            replaceFragment(new HomeFragment(), false);
         }
 
         binding.bottomNavigationView.setBackground(null);
         binding.bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.home) {
-                replaceFragment(new HomeFragment());
+                replaceFragment(new HomeFragment(), false);
             } else if (itemId == R.id.calendar) {
-                replaceFragment(new CalendarFragment());
+                replaceFragment(new CalendarFragment(), true);
             } else if (itemId == R.id.tasks) {
-                replaceFragment(new TasksFragment());
+                replaceFragment(new TasksFragment(), true);
             } else if (itemId == R.id.profile) {
-                replaceFragment(new ProfileFragment());
+                replaceFragment(new ProfileFragment(), true);
             }
             return true;
         });
@@ -205,17 +203,24 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnIte
     }
 
 
-    public void navigateToTasksFragmentWithProject(int projectId) {
-        TasksFragment tasksFragment = TasksFragment.newInstance(projectId);
-        replaceFragment(tasksFragment);
-        binding.bottomNavigationView.setSelectedItemId(R.id.tasks);
+    public void navigateToProjectFragment(int projectId) {
+        ProjectFragment projectFragment = ProjectFragment.newInstance(projectId);
+        replaceFragment(projectFragment, true);
     }
 
-    private void replaceFragment(Fragment fragment) {
+    public void navigateToCalendarFragment() {
+        replaceFragment(new CalendarFragment(), true);
+        binding.bottomNavigationView.setSelectedItemId(R.id.calendar);
+    }
+
+
+    private void replaceFragment(Fragment fragment, boolean addToBackStack) {
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.replace(R.id.frame_layout, fragment);
-        transaction.addToBackStack(fragment.getClass().getSimpleName());
+        transaction.replace(R.id.frame_layout, fragment, fragment.getClass().getSimpleName());
+        if (addToBackStack) {
+            transaction.addToBackStack(fragment.getClass().getSimpleName());
+        }
         transaction.commit();
     }
 
@@ -353,7 +358,7 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnIte
 
             UserResponse currentUser = sharedUserViewModel.getUser().getValue();
             if (currentUser == null || currentUser.getId() == null) {
-                Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "User not found", Toast.LENGTH_SHORT).show();
                 return;
             }
             int userId = currentUser.getId();
@@ -582,7 +587,7 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnIte
             String selectedLabelTitleFromSpinner = labelSpinner.getSelectedItemPosition() > 0 ? labelSpinner.getSelectedItem().toString() : null;
 
             if (title.isEmpty()) {
-                taskTitleEditText.setError("Title is required");
+                taskTitleEditText.setError("Task title is required");
                 return;
             }
             if (dueDate.isEmpty()){

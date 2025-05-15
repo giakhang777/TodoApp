@@ -7,20 +7,24 @@ import com.example.apptodo.api.TaskService;
 import com.example.apptodo.api.UserService;
 
 import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor; // Thêm import này
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import java.util.concurrent.TimeUnit;
 
 public class RetrofitClient {
     private static Retrofit retrofit;
-    private static final String BASE_URL = "http://10.0.2.2:8080/api/";
+    private static final String BASE_URL = "http://10.0.2.2:8080/api/"; // Đảm bảo URL đúng
 
     public static Retrofit getRetrofit() {
         if (retrofit == null) {
             HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
-            loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+            loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY); // Log chi tiết
 
             OkHttpClient.Builder httpClientBuilder = new OkHttpClient.Builder()
+                    .connectTimeout(10, TimeUnit.SECONDS) // Thêm timeout
+                    .readTimeout(10, TimeUnit.SECONDS)
+                    .writeTimeout(10, TimeUnit.SECONDS)
                     .followRedirects(true)
                     .followSslRedirects(true)
                     .addInterceptor(loggingInterceptor);
@@ -43,7 +47,8 @@ public class RetrofitClient {
     public static ProjectService getProjectService() {
         return getRetrofit().create(ProjectService.class);
     }
-    public static LabelService getLabelService(){
+
+    public static LabelService getLabelService() {
         return getRetrofit().create(LabelService.class);
     }
 
