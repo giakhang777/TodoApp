@@ -271,7 +271,7 @@ public class TaskViewModel extends ViewModel {
         }
 
         for (TaskResponse task : tasks) {
-            if (task.getReminder() != null && task.getReminder() && task.getReminderTime() != null) {
+            if (task.getReminder() != null && task.getReminder() && task.getReminderTime() != null && task.getCompleted()==false) {
                 String reminderTimeStr = task.getReminderTimeFormated();
                 long reminderTime = parseReminderTime(reminderTimeStr);
 
